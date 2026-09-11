@@ -35,6 +35,16 @@ logs/
 coverage/
 .nyc_output/
 
+# --- AI Assistants & Coding Tools ---
+.agents/
+.claude/
+.cursor/
+.devin/
+backend/.agents/
+backend/.claude/
+backend/.cursor/
+backend/.devin/
+
 # --- IDEs & Editors ---
 .vscode/*
 !.vscode/extensions.json
