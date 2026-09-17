@@ -29,7 +29,7 @@ export class AuthService {
         const payload = {userId: newUser.id};
         const token = this.jwtService.sign(payload);
         
-        return {access_token: token};
+        return { access_token: token, user: { id: newUser.id, email } };
     }
 
     async login (email:string, password:string) {
@@ -47,7 +47,7 @@ export class AuthService {
         const payload = {userId: user.id};
         const token = this.jwtService.sign(payload);
         
-        return {access_token: token};
+       return { access_token: token, user: { id: user.id, email } };
     }
 
     async getUserById(userId: string) {
