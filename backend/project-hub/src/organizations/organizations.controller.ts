@@ -1,7 +1,29 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Param } from '@nestjs/common';
 import { OrganizationsService } from './organizations.service';
+import { CreateOrganizationDto } from './dto/create-organization.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt_auth.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
+@UseGuards(JwtAuthGuard)
 @Controller('organizations')
 export class OrganizationsController {
   constructor(private readonly organizationsService: OrganizationsService) {}
+  
+  @Post()
+  createOrganization(
+    @Body() body: CreateOrganizationDto, 
+    @CurrentUser() user: {userId: string}) {
+    return this.organizationsService.createOrganization(user.userId, body.name);  
+  }
+
+  @Get()
+  getUserOrganizations(@CurrentUser() user: {userId: string}) {
+    return this.organizationsService.getUserOrganizations(user.userId);
+  }
+
+  @Get(':id')
+  getOrganizationById(@Param('id') orgId:string, 
+  @CurrentUser() user: {userId: string}) {
+    return this.organizationsService.getOrganizationById(user.userId, orgId);
+  }
 }
