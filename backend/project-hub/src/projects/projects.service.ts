@@ -1,4 +1,53 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { OrganizationsService } from '../organizations/organizations.service';
+import { CreateProjectDto } from './dto/create-project.dto';
+import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
-export class ProjectsService {}
+export class ProjectsService {
+    constructor (
+        private readonly organizationsService: OrganizationsService, 
+        private prisma: PrismaService 
+    ) {}
+
+    async createProject(userId: string, orgId: string, data: CreateProjectDto) {
+        await this.organizationsService.getOrganizationById(userId, orgId);
+
+        return await this.prisma.project.create({
+            data: {
+                name: data.name,
+                description: data.description,
+                organizationId: orgId
+            }
+        });
+    }
+
+    async getProjectsByOrg(userId: string, orgId: string) {
+        await this.organizationsService.getOrganizationById(userId, orgId);
+        
+        return await this.prisma.project.findMany({
+            where: {
+                organizationId: orgId
+            }
+        });
+    }
+
+    async getProjectById(userId: string, projectId: string) {
+        const project = await this.prisma.project.findFirst({
+            where: {
+                id: projectId,
+                organization: {
+                    memberships: {
+                        some: {
+                            userId: userId
+                        }
+                    }
+                }
+            }
+        });
+
+        if (!project) throw new NotFoundException("Project not found or access denied");
+
+        return project;
+    }
+}
