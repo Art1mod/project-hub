@@ -3,13 +3,16 @@ import { ProjectsService } from './projects.service';
 import { JwtAuthGuard } from '../auth/guards/jwt_auth.guard';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller()
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
   @Post('organizations/:orgId/projects')
+  @Roles('OWNER', 'ADMIN')
   createProject(
       @Param('orgId') orgId:string,
       @Body() body: CreateProjectDto, 
