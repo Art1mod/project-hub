@@ -6,7 +6,7 @@ export class UpdateTaskDto {
     @IsString()
     @IsNotEmpty()
     @IsOptional()
-    readonly name?: string;
+    readonly title?: string;
 
     @IsString()
     @IsOptional()

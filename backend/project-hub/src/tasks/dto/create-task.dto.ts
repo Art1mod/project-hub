@@ -4,7 +4,7 @@ import { IsEnum, IsNotEmpty, IsOptional, IsString } from "class-validator";
 export class CreateTaskDto {
     @IsString()
     @IsNotEmpty()
-    readonly name: string;
+    readonly title: string;
 
     @IsString()
     @IsOptional()
