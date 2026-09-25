@@ -4,7 +4,10 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { GetTasksFilterDto } from './dto/get-tasks-filter.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt_auth.guard';
+import { UseGuards } from '@nestjs/common';
 
+@UseGuards(JwtAuthGuard)
 @Controller()
 export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
