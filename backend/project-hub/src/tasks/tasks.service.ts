@@ -4,6 +4,7 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { ProjectsService } from '../projects/projects.service';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { NotFoundException } from '@nestjs/common';
+import { GetTasksFilterDto } from './dto/get-tasks-filter.dto';
 
 @Injectable()
 export class TasksService {
@@ -79,5 +80,31 @@ export class TasksService {
                 id: task.id
             }
         });
+    }
+
+    async getTasksByProjectId(userId: string, projectId: string, filters: GetTasksFilterDto) {
+        await this.projectsService.getProjectById(userId, projectId);
+    
+        const { status, priority, assigneeId, search, page, limit } = filters;
+        const skip = (page - 1) * limit;
+        const whereObject: any = { projectId: projectId };
+
+        if (status) whereObject.status = status;
+        if (priority) whereObject.priority = priority;
+        if (assigneeId) whereObject.assigneeId = assigneeId;
+        if (search) whereObject.title = { contains: search, mode: 'insensitive' };
+
+        const [tasks, total] = await Promise.all([
+            this.prisma.task.findMany({
+                where: whereObject,
+                skip: skip,
+                take: limit,
+                orderBy: { createdAt: 'desc' }
+            }),
+            this.prisma.task.count({ where: whereObject })
+        ]);
+
+        const totalPages = Math.ceil(total / limit);
+        return { data: tasks, meta: { total, page, limit, totalPages } };
     }
 }
