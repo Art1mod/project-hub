@@ -6,6 +6,7 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 import { NotFoundException } from '@nestjs/common';
 import { GetTasksFilterDto } from './dto/get-tasks-filter.dto';
 
+
 @Injectable()
 export class TasksService {
     constructor ( 
@@ -14,13 +15,15 @@ export class TasksService {
 
     async createTask(userId: string, projectId: string, data: CreateTaskDto) {
         await this.projectsService.getProjectById(userId, projectId);
-        
+        if (data.assigneeId) await this.projectsService.getProjectById(data.assigneeId, projectId);
+
         return await this.prisma.task.create({
             data: {
                 title: data.title, 
                 description: data.description,
                 priority:data.priority,
                 status: data.status,
+                assigneeId: data.assigneeId,
                 projectId: projectId,   
             },
         });
@@ -42,7 +45,8 @@ export class TasksService {
             }
         });     
 
-        if (!task) throw new NotFoundException("Task not found or access denied");   
+        if (!task) throw new NotFoundException("Task not found or access denied");
+        if (newData.assigneeId) await this.projectsService.getProjectById(newData.assigneeId, task.projectId);  
         
         return await this.prisma.task.update( {
             where: {
@@ -52,7 +56,8 @@ export class TasksService {
                 title: newData.title, 
                 description: newData.description,
                 priority:newData.priority,
-                status: newData.status 
+                status: newData.status,
+                assigneeId: newData.assigneeId 
             }   
         });
     }
