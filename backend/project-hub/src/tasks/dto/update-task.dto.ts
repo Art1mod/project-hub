@@ -19,4 +19,8 @@ export class UpdateTaskDto {
     @IsEnum(Priority)
     @IsOptional()
     readonly priority?: Priority; 
+
+    @IsOptional()
+    @IsString()
+    readonly assigneeId?: string;
 }

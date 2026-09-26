@@ -17,4 +17,8 @@ export class CreateTaskDto {
     @IsEnum(Priority)
     @IsOptional()
     readonly priority: Priority = "MEDIUM"; 
+
+    @IsOptional()
+    @IsString()
+    readonly assigneeId?: string;
 }
