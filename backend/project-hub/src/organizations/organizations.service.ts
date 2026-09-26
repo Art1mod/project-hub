@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { UpdateOrganizationDto } from './dto/update-organization.dto';
 
 @Injectable()
 export class OrganizationsService {
@@ -66,5 +67,53 @@ export class OrganizationsService {
         if (!organization) throw new NotFoundException("Organization not found or access denied");
 
         return organization;
+    }
+
+    async deleteOrganizationById(userId: string, orgId: string) {
+        
+        const organization = await this.prisma.organization.findFirst({
+            where: {
+                id: orgId,
+                memberships: {
+                    some: {
+                        userId: userId,
+                        role: { in: ['OWNER', 'ADMIN'] }
+                    }
+                }
+            },    
+        });
+
+        if (!organization) throw new NotFoundException("Organization not found or access denied");
+
+        return await this.prisma.organization.delete({
+            where: {
+                id: orgId
+            }
+        });     
+    }
+
+    async updateOrganizationById(userId: string, orgId: string, newData: UpdateOrganizationDto) {
+        const organization = await this.prisma.organization.findFirst({
+            where: {
+                id: orgId,
+                memberships: {
+                    some: {
+                       userId: userId,
+                        role: { in: ['OWNER', 'ADMIN'] }
+                    }
+                }
+            },    
+        });
+        
+        if (!organization) throw new NotFoundException("Organization not found or access denied");
+
+        return await this.prisma.organization.update({
+            where: {
+                id: orgId
+            },
+            data: {
+                name: newData.name
+            }
+        });
     }
 }
