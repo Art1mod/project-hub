@@ -7,12 +7,13 @@ import { ConfigModule } from '@nestjs/config';
 import { OrganizationsModule } from './organizations/organizations.module';
 import { ProjectsModule } from './projects/projects.module';
 import { TasksModule } from './tasks/tasks.module';
+import { InvitationsModule } from './invitations/invitations.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     AuthModule, 
-    PrismaModule, OrganizationsModule, ProjectsModule, TasksModule
+    PrismaModule, OrganizationsModule, ProjectsModule, TasksModule, InvitationsModule
   ],
   controllers: [AppController],
   providers: [AppService],
