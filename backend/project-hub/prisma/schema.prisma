@@ -42,6 +42,7 @@ model Organization {
   updatedAt   DateTime     @updatedAt
   memberships Membership[]
   projects    Project[]
+  invitations Invitation[]
 }
 
 model Membership {
@@ -78,4 +79,16 @@ model Task {
   assignee    User?    @relation(fields: [assigneeId], references: [id])
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Invitation {
+  id             String       @id @default(uuid())
+  email          String
+  token          String       @unique
+  role           Role
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  expiresAt      DateTime
 }
