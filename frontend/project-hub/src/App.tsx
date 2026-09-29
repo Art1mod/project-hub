@@ -1,16 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
-
-function AppLayout() {
-  return (
-    <div className="flex min-h-screen">
-      {/* Sidebar / Navigation */}
-      <main className="flex-1 p-6">
-        <Outlet />
-      </main>
-    </div>
-  );
-}
-
+import { BrowserRouter, Routes, Route, Navigate} from 'react-router-dom';
+import {AppLayout} from './layouts/AppLayout'
 function App() {
   return (
     <BrowserRouter>
