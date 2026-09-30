@@ -1,6 +1,12 @@
-import { NavLink, Outlet } from 'react-router-dom';
+import { Navigate, NavLink, Outlet } from 'react-router-dom';
 
 export function AppLayout() {
+
+    const token = localStorage.getItem('token');
+    
+    if(!token) {
+        return <Navigate replace to="/login"/>
+    }
 
     const navLinkClass = ({ isActive }: { isActive: boolean }) =>
         `block px-3 py-2 rounded-md transition-colors ${

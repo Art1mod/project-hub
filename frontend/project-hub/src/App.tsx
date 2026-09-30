@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate} from 'react-router-dom';
 import {AppLayout} from './layouts/AppLayout'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Projects } from './pages/Projects';
+import { Login } from './pages/Login';
 
 const queryClient = new QueryClient();
 
@@ -10,6 +11,8 @@ function App() {
     <QueryClientProvider client={queryClient}> 
       <BrowserRouter>
       <Routes>
+        <Route path="/login" element={<Login/>}></Route>
+        
         <Route element={<AppLayout />}>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<div>Dashboard</div>} />
