@@ -1,12 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { getOrganizations, getProjects, createProject } from "../api/projects";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export function Projects () {
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
     
     const queryClient = useQueryClient();
+    const navigate = useNavigate();
     
     const {data: orgs} = useQuery({
         queryKey: ['organizations'],
@@ -32,6 +34,10 @@ export function Projects () {
             console.error("Create project failed", err);
         }
     });
+
+    const handleRowClick = (projectId: string) => {
+        navigate(`/projects/${projectId}`);
+    };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -81,8 +87,9 @@ export function Projects () {
                     <tbody>
                         {projects?.map((project: any) => (
                             <tr 
-                                key={project.id} 
-                                className="text-zinc-50 border-b border-white/5 last:border-0 hover:bg-zinc-800/50 transition-colors"
+                                key={project.id}
+                                onClick={() => handleRowClick(project.id)} 
+                                className="text-zinc-50 border-b border-white/5 last:border-0 hover:bg-zinc-800/50 transition-colors cursor-pointer"
                             >
                                 <td className="px-4 py-3">{project.name}</td>
                                 <td className="px-4 py-3 whitespace-normal">{project.description}</td>
