@@ -12,21 +12,26 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}> 
       <BrowserRouter>
-        <OrganizationProvider>
-          <Routes>
-            <Route path="/login" element={<Login/>}></Route>
-            <Route element={<AppLayout />}>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<div>Dashboard</div>} />
-              <Route path="/projects" element={<Projects/>} />
-              <Route path="/projects/:projectId" element={<ProjectDetails/>} />
-              <Route path="/members" element={<div>Members</div>} />
-              <Route path="/invitations" element={<div>Invitations</div>} />
-              <Route path="/settings" element={<div>Settings</div>} />
-              <Route path="/profile" element={<div>Profile</div>} />
-            </Route>
-          </Routes>
-        </OrganizationProvider>
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          
+          <Route 
+            element={
+              <OrganizationProvider>
+                <AppLayout />
+              </OrganizationProvider>
+            }
+          >
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<div>Dashboard</div>} />
+            <Route path="/projects" element={<Projects />} />
+            <Route path="/projects/:projectId" element={<ProjectDetails />} />
+            <Route path="/members" element={<div>Members</div>} />
+            <Route path="/invitations" element={<div>Invitations</div>} />
+            <Route path="/settings" element={<div>Settings</div>} />
+            <Route path="/profile" element={<div>Profile</div>} />
+          </Route>
+        </Routes>
       </BrowserRouter>
     </QueryClientProvider>
   ); 
