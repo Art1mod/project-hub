@@ -1,10 +1,13 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { getTasks, type Priority, type Status } from "../api/tasks";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { createTask } from "../api/tasks";
 import { Modal } from "../components/Modal";
+import { useNavigate } from "react-router-dom";
+import { useOrganization } from "../contexts/OrganizationContext";
+import { useRef } from "react";
 
 export function ProjectDetails() {
     
@@ -17,6 +20,18 @@ export function ProjectDetails() {
 
     const queryClient = useQueryClient();
     const {projectId} = useParams<{ projectId: string }>();
+    const navigate = useNavigate();
+    
+    const { activeOrgId } = useOrganization();
+    const initialOrgId = useRef<string | null>(activeOrgId);
+
+    useEffect(() => {
+        if (!initialOrgId.current && activeOrgId) {
+            initialOrgId.current = activeOrgId;
+        } else if (initialOrgId.current && activeOrgId && initialOrgId.current !== activeOrgId) {
+            navigate('/projects');
+        }
+    }, [activeOrgId, navigate]);
         
     const { data: tasks, isLoading, isError } = useQuery({
         queryKey: ['tasks', projectId],
