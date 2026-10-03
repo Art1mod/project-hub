@@ -1,21 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getOrganizations, getProjects, createProject } from "../api/projects";
+import { getProjects, createProject } from "../api/projects";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useOrganization } from "../contexts/OrganizationContext";
 
 export function Projects () {
+    const {activeOrgId} = useOrganization();
+    
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
-    
     const queryClient = useQueryClient();
     const navigate = useNavigate();
-    
-    const {data: orgs} = useQuery({
-        queryKey: ['organizations'],
-        queryFn: getOrganizations, 
-    });
-
-    const activeOrgId = orgs?.[0]?.id;
 
     const {data: projects, isLoading, isError} = useQuery({
         queryKey: ['projects', activeOrgId],
