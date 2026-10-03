@@ -21,3 +21,18 @@ api.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+
+api.interceptors.response.use(
+    (response) => {
+        return response;
+    },
+    (error) => {
+        if (error.response && error.response.status === 401) {
+            console.warn('Token expired or unauthorized. Redirecting to login.');
+            localStorage.removeItem('token');
+            window.location.href = '/login'; 
+        }
+        
+        return Promise.reject(error);
+    }
+);
