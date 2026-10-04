@@ -116,4 +116,33 @@ export class OrganizationsService {
             }
         });
     }
+
+    async getMembers(userId: string, orgId: string) {
+        const organization = await this.prisma.organization.findFirst({
+            where: {
+                id: orgId,
+                memberships: {
+                    some: {
+                       userId: userId
+                    }
+                }
+            },    
+        });
+        
+        if (!organization) throw new NotFoundException("Organization not found or access denied");
+        
+        return await this.prisma.membership.findMany({
+            where: {
+                organizationId: orgId,
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        email: true,
+                    }
+                }
+            }
+        });
+    }
 }
