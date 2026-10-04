@@ -1,6 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
-import { getTasks, type Priority, type Status } from "../api/tasks";
+import { getTasks, updateTask, type Priority, type Status, type CreateTaskProps} from "../api/tasks";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { createTask } from "../api/tasks";
@@ -52,7 +52,15 @@ export function ProjectDetails() {
             setStatus("TODO");
             setPriority("MEDIUM");
         },   
-    }); 
+    });
+    
+    const updateTaskMutation = useMutation({
+        mutationFn: ({ taskId, data }: { taskId: string, data: Partial<CreateTaskProps> }) => 
+            updateTask({ taskId, data }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });    
+        }
+    });
 
     const handleSubmit = (e: React.FormEvent) =>{
         e.preventDefault();
@@ -102,9 +110,36 @@ export function ProjectDetails() {
                             >
                                 <td className="px-4 py-3">{task.title}</td>
                                 <td className="px-4 py-3 text-center">
-                                    <span className="px-2 py-1 bg-zinc-800 rounded-md text-xs">{task.status}</span>
+                                    <select 
+                                        value={task.status} 
+                                        onChange={(e) => updateTaskMutation.mutate({ 
+                                            taskId: task.id, 
+                                             data: { status: e.target.value as Status } 
+                                        })}
+                                        disabled={updateTaskMutation.isPending}
+                                        className="bg-zinc-800 border border-transparent hover:border-white/20 focus:border-violet-500 rounded-md px-2 py-1 text-xs outline-none cursor-pointer transition-colors disabled:opacity-50"
+                                    >
+                                        <option value="TODO">To Do</option>
+                                        <option value="IN_PROGRESS">In Progress</option>
+                                        <option value="DONE">Done</option>
+                                    </select>
                                 </td>
-                                <td className="px-4 py-3 text-center">{task.priority}</td>
+                                <td className="px-4 py-3 text-center">
+                                    <select 
+                                        value={task.priority} 
+                                        onChange={(e) => updateTaskMutation.mutate({ 
+                                            taskId: task.id, 
+                                             data: { priority: e.target.value as Priority } 
+                                        })}
+                                        disabled={updateTaskMutation.isPending}
+                                        className="bg-zinc-800 border border-transparent hover:border-white/20 focus:border-violet-500 rounded-md px-2 py-1 text-xs outline-none cursor-pointer transition-colors disabled:opacity-50"
+                                    >
+                                        <option value="LOW">Low</option>
+                                        <option value="MEDIUM">Medium</option>
+                                        <option value="HIGH">High</option>
+                                        <option value="URGENT">Urgent</option>
+                                    </select>
+                                </td>
                             </tr>
                         ))
                     )}
