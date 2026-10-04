@@ -19,3 +19,8 @@ export const createTask = async ({ projectId, data }: {projectId: string, data: 
     const response = await api.post(`/projects/${projectId}/tasks`, data);
     return response.data;
 }
+
+export const updateTask = async ({taskId, data}: {taskId:string, data: Partial<CreateTaskProps>}) => {
+    const response = await api.patch(`/tasks/${taskId}`, data);
+    return response.data;
+}
