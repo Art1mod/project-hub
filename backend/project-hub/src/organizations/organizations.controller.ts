@@ -44,4 +44,12 @@ export class OrganizationsController {
   ) {
     return this.organizationsService.updateOrganizationById(user.userId, orgId, body);
   }
+
+  @Get(':orgId/members')
+  getMembers(
+    @Param('orgId') orgId:string, 
+    @CurrentUser() user: {userId: string},
+  ) {
+    return this.organizationsService.getMembers(user.userId, orgId);
+  }
 }
