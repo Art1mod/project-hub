@@ -5,6 +5,7 @@ import { Projects } from './pages/Projects';
 import { Login } from './pages/Login';
 import { ProjectDetails } from './pages/ProjectDetails';
 import { OrganizationProvider } from './contexts/OrganizationContext';
+import { Members } from './pages/Members';
 
 const queryClient = new QueryClient();
 
@@ -26,7 +27,7 @@ function App() {
             <Route path="/dashboard" element={<div>Dashboard</div>} />
             <Route path="/projects" element={<Projects />} />
             <Route path="/projects/:projectId" element={<ProjectDetails />} />
-            <Route path="/members" element={<div>Members</div>} />
+            <Route path="/members" element={<Members/>} />
             <Route path="/invitations" element={<div>Invitations</div>} />
             <Route path="/settings" element={<div>Settings</div>} />
             <Route path="/profile" element={<div>Profile</div>} />
