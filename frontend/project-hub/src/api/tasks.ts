@@ -3,7 +3,7 @@ import { api } from '../lib/api';
 export type Status = 'TODO' | 'IN_PROGRESS' | 'DONE';
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
-interface CreateTaskProps {
+export interface CreateTaskProps {
     title: string;
     description: string;
     status: Status;
