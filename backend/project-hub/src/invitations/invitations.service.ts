@@ -92,4 +92,18 @@ export class InvitationsService {
             return membership;
         });
     }
+
+    async getPendingInvitations(orgId: string) {
+        return await this.prisma.invitation.findMany({
+            where: {
+                organizationId: orgId,
+                expiresAt: {
+                    gt: new Date() 
+                }
+            },
+            orderBy: {
+                createdAt: 'desc'
+            }
+        });
+    }
 }
