@@ -7,6 +7,7 @@ import { ProjectDetails } from './pages/ProjectDetails';
 import { OrganizationProvider } from './contexts/OrganizationContext';
 import { Members } from './pages/Members';
 import { Invitations } from './pages/Invitations';
+import { Register } from './pages/Register';
 
 const queryClient = new QueryClient();
 
@@ -16,6 +17,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
           
           <Route 
             element={
