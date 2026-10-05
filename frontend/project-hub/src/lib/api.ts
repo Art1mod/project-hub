@@ -27,12 +27,15 @@ api.interceptors.response.use(
         return response;
     },
     (error) => {
-        if (error.response && error.response.status === 401) {
-            console.warn('Token expired or unauthorized. Redirecting to login.');
-            localStorage.removeItem('token');
-            window.location.href = '/login'; 
-        }
+
+      const isAuthRequest = error.config?.url?.includes('login') || error.config?.url?.includes('register');
+      
+      if (error.response && error.response.status === 401 && !isAuthRequest) {
+          console.warn('Token expired or unauthorized. Redirecting to login.');
+          localStorage.removeItem('token');
+          if (window.location.pathname !== '/login') window.location.href = '/login'; 
+      }
         
-        return Promise.reject(error);
+      return Promise.reject(error);
     }
 );
