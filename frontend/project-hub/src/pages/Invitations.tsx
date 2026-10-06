@@ -13,10 +13,10 @@ export function Invitations () {
     const createInvitationMutation = useMutation({
         mutationFn: (data: CreateInvitationProps) => 
             createInvitation({ orgId: activeOrgId!, data }),
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['invitations', activeOrgId] }); 
+        onSuccess: async () => { 
             setEmail("");
             setRole("MEMBER");
+            await queryClient.invalidateQueries({ queryKey: ['invitations'] });
         }, 
         onError: (error) => {
             console.error("Failed to send invitation:", error);
