@@ -8,6 +8,7 @@ import { OrganizationProvider } from './contexts/OrganizationContext';
 import { Members } from './pages/Members';
 import { Invitations } from './pages/Invitations';
 import { Register } from './pages/Register';
+import { AcceptInvitation } from './pages/AcceptInvitation';
 
 const queryClient = new QueryClient();
 
@@ -33,7 +34,7 @@ function App() {
             <Route path="/members" element={<Members/>} />
             <Route path="/invitations" element={<Invitations/>} />
             <Route path="/settings" element={<div>Settings</div>} />
-            <Route path="/profile" element={<div>Profile</div>} />
+            <Route path="/profile" element={<AcceptInvitation/>} />
           </Route>
         </Routes>
       </BrowserRouter>
