@@ -25,4 +25,9 @@ export class AuthController {
       return this.authService.getUserById(user.userId);
     }
 
+    @UseGuards(JwtAuthGuard)
+    @Get('invitations/me')
+    getInvitations(@CurrentUser() user: {userId: string}) {
+        return this.authService.getUserInvitations(user.userId); 
+    }
 }
