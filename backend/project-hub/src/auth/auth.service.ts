@@ -63,4 +63,25 @@ export class AuthService {
     
     return result;
   }
+
+  async getUserInvitations(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    
+    return await this.prisma.invitation.findMany({
+        where: {email: user.email},
+        include: {
+            organization: {
+                select: {
+                    name: true        
+                }    
+            }    
+        }
+    });
+  }
 }
