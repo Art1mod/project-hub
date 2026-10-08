@@ -19,7 +19,7 @@ export function Projects () {
     });
 
     const createProjectMutation = useMutation({
-        mutationFn: () => createProject({ orgId: activeOrgId!, name, description }),
+        mutationFn: () => createProject(activeOrgId!, {name, description}),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['projects', activeOrgId] });
             setName("");
