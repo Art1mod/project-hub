@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { getOrganizations } from "../api/projects";
+import { getOrganizations } from "../api/organizations";
 import { useQuery } from "@tanstack/react-query";
 
 interface Organization {
