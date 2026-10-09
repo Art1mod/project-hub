@@ -9,6 +9,7 @@ import { Members } from './pages/Members';
 import { Invitations } from './pages/Invitations';
 import { Register } from './pages/Register';
 import { AcceptInvitation } from './pages/AcceptInvitation';
+import { Settings } from './pages/Settings';
 
 const queryClient = new QueryClient();
 
@@ -33,7 +34,7 @@ function App() {
             <Route path="/projects/:projectId" element={<ProjectDetails />} />
             <Route path="/members" element={<Members/>} />
             <Route path="/invitations" element={<Invitations/>} />
-            <Route path="/settings" element={<div>Settings</div>} />
+            <Route path="/settings" element={<Settings/>} />
             <Route path="/profile" element={<AcceptInvitation/>} />
           </Route>
         </Routes>
