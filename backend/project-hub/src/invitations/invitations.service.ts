@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, BadRequestException, NotFoundException, ForbiddenException, ConflictException } from '@nestjs/common';
 import { CreateInvitationDto } from './dto/create-invitation-dto';
 import { PrismaService } from '../prisma/prisma.service';
 import * as crypto from 'crypto'; 
@@ -18,6 +18,7 @@ export class InvitationsService {
         });
 
         if (!requesterMembership) throw new UnauthorizedException("You do not have permission to invite users to this organization");
+        if (data.role === 'OWNER' && requesterMembership.role !== 'OWNER') throw new ForbiddenException("Only an owner can invite someone as an owner");
 
         const existingUser = await this.prisma.user.findUnique({
             where: { email: data.email },
@@ -73,6 +74,12 @@ export class InvitationsService {
         });
 
         if (!user) throw new NotFoundException("This invitation is not meant for your account.");
+        
+        const existingMembership = await this.prisma.membership.findFirst({
+            where: { userId: userId, organizationId: invitation.organizationId }
+        });
+        
+        if (existingMembership) throw new ConflictException("You are already a member of this organization");
 
         return this.prisma.$transaction(async (tx) => {
             const membership = await tx.membership.create({
