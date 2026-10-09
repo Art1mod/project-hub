@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { ProjectsService } from '../projects/projects.service';
 import { UpdateTaskDto } from './dto/update-task.dto';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { GetTasksFilterDto } from './dto/get-tasks-filter.dto';
 
 
@@ -13,9 +13,20 @@ export class TasksService {
         private readonly projectsService: ProjectsService, 
         private prisma: PrismaService) {}
 
+    
+    private async assertAssigneeInProjectOrg(assigneeId: string, projectId: string) {
+        const membership = await this.prisma.membership.findFirst({
+            where: {
+                userId: assigneeId,
+                organization: { projects: { some: { id: projectId } } }
+            }
+        });
+        if (!membership) throw new BadRequestException("Assignee must be a member of this project's organization");
+    }
+
     async createTask(userId: string, projectId: string, data: CreateTaskDto) {
         await this.projectsService.getProjectById(userId, projectId);
-        if (data.assigneeId) await this.projectsService.getProjectById(data.assigneeId, projectId);
+        if (data.assigneeId) await this.assertAssigneeInProjectOrg(data.assigneeId, projectId);
 
         return await this.prisma.task.create({
             data: {
@@ -46,7 +57,7 @@ export class TasksService {
         });     
 
         if (!task) throw new NotFoundException("Task not found or access denied");
-        if (newData.assigneeId) await this.projectsService.getProjectById(newData.assigneeId, task.projectId);  
+        if (newData.assigneeId) await this.assertAssigneeInProjectOrg(newData.assigneeId, task.projectId);  
         
         return await this.prisma.task.update( {
             where: {

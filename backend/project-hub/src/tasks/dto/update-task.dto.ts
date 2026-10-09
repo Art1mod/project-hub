@@ -3,24 +3,18 @@ import { IsEnum, IsNotEmpty, IsOptional, IsString } from "class-validator";
 
 export class UpdateTaskDto {
 
-    @IsString()
-    @IsNotEmpty()
-    @IsOptional()
+    @IsString() @IsNotEmpty() @IsOptional()
     readonly title?: string;
 
-    @IsString()
-    @IsOptional()
+    @IsString() @IsOptional()
     readonly description?: string;
 
-    @IsEnum(Status)
-    @IsOptional()
+    @IsEnum(Status) @IsOptional()
     readonly status?: Status;
 
-    @IsEnum(Priority)
-    @IsOptional()
+    @IsEnum(Priority) @IsOptional()
     readonly priority?: Priority; 
 
-    @IsOptional()
-    @IsString()
-    readonly assigneeId?: string;
+    @IsOptional() @IsString()
+    readonly assigneeId?: string | null;
 }
