@@ -77,7 +77,7 @@ export class OrganizationsService {
                 memberships: {
                     some: {
                         userId: userId,
-                        role: { in: ['OWNER', 'ADMIN'] }
+                        role: { in: ['OWNER'] }
                     }
                 }
             },    
