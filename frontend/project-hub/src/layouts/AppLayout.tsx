@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Modal } from '../components/Modal';
 import { createOrganization, type Organization } from '../api/organizations';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { ConfirmModal } from '../components/ConfirmModal';
 
 export function AppLayout() {
     const token = localStorage.getItem('token');
@@ -152,8 +153,17 @@ export function AppLayout() {
                     </button>
                 </div>
             </Modal>
+            <ConfirmModal
+                isOpen={isLogoutModalOpen}
+                onClose={() => setIsLogoutModalOpen(false)}
+                onConfirm={handleLogout}
+                title="Logout"
+                message={<>Are you sure you want to log out?</>}
+                confirmLabel="Log Out"
+                pendingLabel="Logging Out..."
+            />
 
-{/* The Modal and Form */}
+            {/* The Modal and Form */}
             <Modal 
                 isOpen={isCreateOrgModalOpen} 
                 onClose={closeCreateOrgModal} 
