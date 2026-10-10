@@ -9,7 +9,7 @@ interface Organization {
 
 interface OrganizationContextType {
     activeOrgId: string | null;
-    setActiveOrgId: (id: string) => void;
+    setActiveOrgId: (id: string | null) => void;
     isLoading: boolean;
     organizations: Organization[];      
 }
@@ -25,9 +25,14 @@ export function OrganizationProvider({children}: {children: ReactNode}) {
     });
     
     useEffect(() => {
-        if(orgs && orgs.length > 0 && !activeOrgId) {
-            setActiveOrgId(orgs[0].id);    
+        if (!orgs || orgs.length === 0) return;
+        
+        const isValid = activeOrgId && orgs.some((org) => org.id === activeOrgId);
+        
+        if (!isValid) {
+            setActiveOrgId(orgs[0].id);
         }
+
     }, [orgs, activeOrgId]
     );
 
