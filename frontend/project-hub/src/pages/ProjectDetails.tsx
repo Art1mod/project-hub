@@ -7,6 +7,7 @@ import { Modal } from "../components/Modal";
 import { InlineEditable } from "../components/InlineEditable";
 import { useOrganization } from "../contexts/OrganizationContext";
 import { ConfirmModal } from "../components/ConfirmModal";
+import { PRIORITY_OPTIONS, STATUS_OPTIONS } from "../constants/tasks";
 
 export function ProjectDetails() {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -224,9 +225,9 @@ export function ProjectDetails() {
                                         disabled={updateTaskMutation.isPending}
                                         className="bg-zinc-800 border border-transparent hover:border-white/20 focus:border-violet-500 rounded-md px-2 py-1 text-xs outline-none cursor-pointer transition-colors disabled:opacity-50"
                                     >
-                                        <option value="TODO">To Do</option>
-                                        <option value="IN_PROGRESS">In Progress</option>
-                                        <option value="DONE">Done</option>
+                                        {STATUS_OPTIONS.map((o) => (
+                                            <option key={o.value} value={o.value}>{o.label}</option>
+                                        ))}
                                     </select>
                                 </td>
                                 <td className="px-4 py-3 text-center">
@@ -239,10 +240,9 @@ export function ProjectDetails() {
                                         disabled={updateTaskMutation.isPending}
                                         className="bg-zinc-800 border border-transparent hover:border-white/20 focus:border-violet-500 rounded-md px-2 py-1 text-xs outline-none cursor-pointer transition-colors disabled:opacity-50"
                                     >
-                                        <option value="LOW">Low</option>
-                                        <option value="MEDIUM">Medium</option>
-                                        <option value="HIGH">High</option>
-                                        <option value="URGENT">Urgent</option>
+                                        {PRIORITY_OPTIONS.map((o) => (
+                                            <option key={o.value} value={o.value}>{o.label}</option>
+                                        ))}
                                     </select>
                                 </td>
                             </tr>
@@ -288,9 +288,9 @@ export function ProjectDetails() {
                                 onChange={(e) => setStatus(e.target.value as Status)}
                                 className="bg-zinc-950 border border-white/10 rounded-md p-2 outline-none focus:border-violet-500 transition-colors"
                             >
-                                <option value="TODO">To Do</option>
-                                <option value="IN_PROGRESS">In Progress</option>
-                                <option value="DONE">Done</option>
+                                {STATUS_OPTIONS.map((o) => (
+                                    <option key={o.value} value={o.value}>{o.label}</option>
+                                ))}
                             </select>
                         </div>
 
@@ -301,10 +301,9 @@ export function ProjectDetails() {
                                 onChange={(e) => setPriority(e.target.value as Priority)}
                                 className="bg-zinc-950 border border-white/10 rounded-md p-2 outline-none focus:border-violet-500 transition-colors"
                             >
-                                <option value="LOW">Low</option>
-                                <option value="MEDIUM">Medium</option>
-                                <option value="HIGH">High</option>
-                                <option value="URGENT">Urgent</option>
+                                {PRIORITY_OPTIONS.map((o) => (
+                                    <option key={o.value} value={o.value}>{o.label}</option>
+                                ))}
                             </select>
                         </div>
                     </div>
