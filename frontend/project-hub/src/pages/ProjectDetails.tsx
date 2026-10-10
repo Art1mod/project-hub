@@ -6,6 +6,7 @@ import { getProject, updateProject, deleteProject, type UpdateProjectInput } fro
 import { Modal } from "../components/Modal";
 import { InlineEditable } from "../components/InlineEditable";
 import { useOrganization } from "../contexts/OrganizationContext";
+import { ConfirmModal } from "../components/ConfirmModal";
 
 export function ProjectDetails() {
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -327,42 +328,17 @@ export function ProjectDetails() {
                 </form>
             </Modal>
 
-            {/* Delete project confirmation */}
-            <Modal
+            <ConfirmModal
                 isOpen={isDeleteModalOpen}
                 onClose={closeDeleteModal}
+                onConfirm={() => deleteProjectMutation.mutate()}
                 title="Delete Project"
-            >
-                <div className="mb-6 text-zinc-300">
-                    Are you sure you want to delete {project.name}? Its tasks will be
-                    deleted too. This cannot be undone.
-                </div>
-
-                {deleteProjectMutation.isError && (
-                    <p role="alert" className="mb-4 text-sm text-red-400">
-                        Failed to delete project. Please try again.
-                    </p>
-                )}
-
-                <div className="flex justify-end gap-3">
-                    <button
-                        type="button"
-                        onClick={closeDeleteModal}
-                        disabled={deleteProjectMutation.isPending}
-                        className="rounded-md px-4 py-2 text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white disabled:opacity-50"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => deleteProjectMutation.mutate()}
-                        disabled={deleteProjectMutation.isPending}
-                        className="rounded-md bg-red-600 px-6 py-2 text-white shadow-[0_0_15px_rgba(220,38,38,0.3)] transition-all hover:bg-red-500 hover:shadow-[0_0_25px_rgba(220,38,38,0.5)] disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                        {deleteProjectMutation.isPending ? "Deleting..." : "Delete"}
-                    </button>
-                </div>
-            </Modal>
+                message={<>Are you sure you want to delete {project.name}? Its tasks will be deleted too. This cannot be undone.</>}
+                confirmLabel="Delete"
+                pendingLabel="Deleting..."
+                isPending={deleteProjectMutation.isPending}
+                error={deleteProjectMutation.isError ? "Failed to delete project. Please try again." : null}
+            />
         </div>
     );
 }
