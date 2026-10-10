@@ -18,6 +18,11 @@ export const getProjects = async (orgId: string): Promise<Project[]> => {
     return response.data;
 }
 
+export const getProject = async (projectId: string): Promise<Project> => {
+    const response = await api.get<Project>(`/projects/${projectId}`);
+    return response.data;
+};
+
 export const createProject = async (orgId: string, input: CreateProjectInput): Promise<Project> => {
     const response = await api.post<Project>(`/organizations/${orgId}/projects`, input);
     return response.data;
