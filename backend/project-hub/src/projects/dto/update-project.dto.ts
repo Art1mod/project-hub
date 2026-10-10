@@ -2,11 +2,9 @@ import { IsNotEmpty, IsOptional, IsString } from "class-validator";
 
 
 export class UpdateProjectDto {
-    @IsString()
-    @IsNotEmpty()
-    readonly name:string;
+    @IsOptional() @IsString() @IsNotEmpty()
+    readonly name?:string;
 
-    @IsString()
-    @IsOptional()
+    @IsString() @IsOptional()
     readonly description?:string;
 }
