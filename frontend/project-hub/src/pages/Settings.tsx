@@ -4,6 +4,7 @@ import { useOrganization } from "../contexts/OrganizationContext";
 import { updateOrganization, deleteOrganization, type Organization } from "../api/organizations";
 import { Modal } from "../components/Modal";
 import { useNavigate } from "react-router-dom";
+import { ConfirmModal } from "../components/ConfirmModal";
 
 export function Settings() {
   const queryClient = useQueryClient();
@@ -25,7 +26,7 @@ export function Settings() {
     },
   });
 
-  const deleteMutation = useMutation({
+  const deleteOrganizationMutation = useMutation({
     mutationFn: (orgId: string) => deleteOrganization(orgId),
     onSuccess: async () => {
       setActiveOrgId("");
@@ -37,7 +38,7 @@ export function Settings() {
 
   const closeDeleteModal = () => {
     setIsDeleteModalOpen(false);
-    deleteMutation.reset();
+    deleteOrganizationMutation.reset();
   };
 
   useEffect(() => {
@@ -55,8 +56,8 @@ export function Settings() {
   };
 
   const handleDelete = () => {
-    if (!activeOrg || deleteMutation.isPending) return;
-    deleteMutation.mutate(activeOrg.id);
+    if (!activeOrg || deleteOrganizationMutation.isPending) return;
+    deleteOrganizationMutation.mutate(activeOrg.id);
   };
 
   if (!activeOrg) {
@@ -150,43 +151,17 @@ export function Settings() {
           </button>
         </div>
       </section>
-
-      {/* Delete confirmation */}
-      <Modal
-        isOpen={isDeleteModalOpen}
-        onClose={closeDeleteModal}
-        title="Confirm Delete Organization"
-      >
-        <div className="mb-6 text-zinc-300">
-          Are you sure you want to delete {activeOrg.name}? This cannot be
-          undone.
-        </div>
-
-        {deleteMutation.isError && (
-          <p role="alert" className="mb-4 text-sm text-red-400">
-            Failed to delete organization. Please try again.
-          </p>
-        )}
-
-        <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={closeDeleteModal}
-            disabled={deleteMutation.isPending}
-            className="rounded-md px-4 py-2 text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-white disabled:opacity-50"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleDelete}
-            disabled={deleteMutation.isPending}
-            className="rounded-md bg-red-600 px-6 py-2 text-white shadow-[0_0_15px_rgba(220,38,38,0.3)] transition-all hover:bg-red-500 hover:shadow-[0_0_25px_rgba(220,38,38,0.5)] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {deleteMutation.isPending ? "Deleting..." : "Confirm"}
-          </button>
-        </div>
-      </Modal>
+      <ConfirmModal
+          isOpen={isDeleteModalOpen}
+          onClose={closeDeleteModal}
+          onConfirm={handleDelete}
+          title="Delete Organization"
+          message={<>Are you sure you want to delete {activeOrg.name}? Its projects and tasks will be deleted too. This cannot be undone.</>}
+          confirmLabel="Delete"
+          pendingLabel="Deleting..."
+          isPending={deleteOrganizationMutation.isPending}
+          error={deleteOrganizationMutation.isError ? "Failed to delete organization. Please try again." : null}
+      />
     </div>
   );
 }
