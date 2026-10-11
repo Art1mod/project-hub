@@ -10,6 +10,7 @@ import { Invitations } from './pages/Invitations';
 import { Register } from './pages/Register';
 import { AcceptInvitation } from './pages/AcceptInvitation';
 import { Settings } from './pages/Settings';
+import { RequirePermission } from './components/RequirePermission';
 
 const queryClient = new QueryClient();
 
@@ -33,7 +34,14 @@ function App() {
             <Route path="/projects" element={<Projects />} />
             <Route path="/projects/:projectId" element={<ProjectDetails />} />
             <Route path="/members" element={<Members/>} />
-            <Route path="/invitations" element={<Invitations/>} />
+            <Route
+                path="/invitations"
+                element={
+                    <RequirePermission permission="invitation:view">
+                        <Invitations />
+                    </RequirePermission>
+                }
+            />
             <Route path="/settings" element={<Settings/>} />
             <Route path="/profile" element={<AcceptInvitation/>} />
           </Route>
