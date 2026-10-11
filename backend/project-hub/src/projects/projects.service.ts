@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { OrganizationsService } from '../organizations/organizations.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -12,14 +12,19 @@ export class ProjectsService {
     ) {}
 
     async createProject(userId: string, orgId: string, data: CreateProjectDto) {
-        await this.organizationsService.getOrganizationById(userId, orgId);
+        const organization = await this.organizationsService.getOrganizationById(userId, orgId);
+
+        const role = organization.memberships[0].role;
+        if (role !== 'OWNER' && role !== 'ADMIN') {
+            throw new ForbiddenException('Only owners and admins can create projects');
+        }
 
         return await this.prisma.project.create({
             data: {
                 name: data.name,
                 description: data.description,
                 organizationId: orgId
-            }
+            },
         });
     }
 
