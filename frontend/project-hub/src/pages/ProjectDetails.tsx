@@ -8,6 +8,7 @@ import { useOrganization } from "../contexts/OrganizationContext";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { CreateTaskModal } from "../components/tasks/CreateTaskModal";
 import { TaskTable } from "../components/tasks/TaskTable";
+import { usePermissions } from "../hooks/usePermissions";
 
 export function ProjectDetails() {
     const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
@@ -23,8 +24,8 @@ export function ProjectDetails() {
     const { activeOrgId } = useOrganization();
     const initialOrgId = useRef<string | null>(activeOrgId);
 
-    // TODO: derive from the user's role in this org (OWNER / ADMIN)
-    const canManage = true;
+    const { can } = usePermissions();
+    const canManage = can("project:manage");
 
     useEffect(() => {
         if (!initialOrgId.current && activeOrgId) {
