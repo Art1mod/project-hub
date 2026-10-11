@@ -1,10 +1,9 @@
 import { api } from "../lib/api"
-
-export type Role = 'OWNER' | 'ADMIN' | 'MEMBER';
+import type { Role } from "./organizations";
 
 export interface CreateInvitationProps {
     email: string;
-    role: Role    
+    role: Role;    
 }
 
 export const createInvitation = async ({ orgId, data}: {orgId: string, data: CreateInvitationProps  }) => {
