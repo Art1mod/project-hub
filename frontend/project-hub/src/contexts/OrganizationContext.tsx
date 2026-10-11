@@ -1,52 +1,49 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { getOrganizations } from "../api/organizations";
+import { getOrganizations, type Organization, type Role } from "../api/organizations";
 import { useQuery } from "@tanstack/react-query";
-
-interface Organization {
-    id: string;
-    name: string;
-}
 
 interface OrganizationContextType {
     activeOrgId: string | null;
     setActiveOrgId: (id: string | null) => void;
+    activeRole: Role | null;
     isLoading: boolean;
-    organizations: Organization[];      
+    organizations: Organization[];
 }
 
 const OrganizationContext = createContext<OrganizationContextType | undefined>(undefined);
 
-export function OrganizationProvider({children}: {children: ReactNode}) {
+export function OrganizationProvider({ children }: { children: ReactNode }) {
     const [activeOrgId, setActiveOrgId] = useState<string | null>(null);
 
-    const {data: orgs, isLoading} = useQuery({
-            queryKey: ['organizations'],
-            queryFn: getOrganizations, 
+    const { data: orgs, isLoading } = useQuery({
+        queryKey: ['organizations'],
+        queryFn: getOrganizations,
     });
-    
+
+    const activeRole = orgs?.find((o) => o.id === activeOrgId)?.role ?? null;
+
     useEffect(() => {
         if (!orgs || orgs.length === 0) return;
-        
+
         const isValid = activeOrgId && orgs.some((org) => org.id === activeOrgId);
-        
+
         if (!isValid) {
             setActiveOrgId(orgs[0].id);
         }
-
-    }, [orgs, activeOrgId]
-    );
+    }, [orgs, activeOrgId]);
 
     const valueToShare = {
         organizations: orgs || [],
         activeOrgId,
+        activeRole,
         setActiveOrgId,
-        isLoading
-    }
+        isLoading,
+    };
+
+    console.log(activeRole);
 
     return (
-        <OrganizationContext.Provider 
-            value={valueToShare}
-        >
+        <OrganizationContext.Provider value={valueToShare}>
             {children}
         </OrganizationContext.Provider>
     );
