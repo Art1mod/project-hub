@@ -5,6 +5,7 @@ import { Modal } from '../components/Modal';
 import { createOrganization, type Organization } from '../api/organizations';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { Can } from '../components/Can';
 
 export function AppLayout() {
     const token = localStorage.getItem('token');
@@ -106,7 +107,9 @@ export function AppLayout() {
                     <NavLink to="/dashboard" className={navLinkClass}>Dashboard</NavLink>
                     <NavLink to="/projects" className={navLinkClass}>Projects</NavLink>
                     <NavLink to="/members" className={navLinkClass}>Members</NavLink>
-                    <NavLink to="/invitations" className={navLinkClass}>Invitations</NavLink>
+                    <Can permission="invitation:view">
+                        <NavLink to="/invitations" className={navLinkClass}>Invitations</NavLink>
+                    </Can>
                     <NavLink to="/settings" className={navLinkClass}>Settings</NavLink>
                 </nav>
 
