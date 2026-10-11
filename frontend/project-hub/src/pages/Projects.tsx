@@ -3,6 +3,7 @@ import { getProjects, createProject } from "../api/projects";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOrganization } from "../contexts/OrganizationContext";
+import { Can } from "../components/Can";
 
 export function Projects () {
     const {activeOrgId} = useOrganization();
@@ -45,30 +46,32 @@ export function Projects () {
 
     return (
         <div className="flex flex-col gap-6">
-            {/* Form Container */}
-            <form onSubmit={handleSubmit} className="bg-zinc-900 border border-white/10 rounded-xl p-6 flex gap-4 text-zinc-50 items-center">
-                <input
-                    type="text"
-                    value={name}
-                    onChange={(e)=> setName(e.target.value)}
-                    placeholder="Project Name"
-                    className="bg-zinc-950 border border-white/10 rounded-md p-2 flex-1 outline-none focus:border-violet-500 transition-colors"
-                />
-                <input
-                    type="text"
-                    value={description}
-                    onChange={(e)=> setDescription(e.target.value)}
-                    placeholder="Description"
-                    className="bg-zinc-950 border border-white/10 rounded-md p-2 flex-1 outline-none focus:border-violet-500 transition-colors"
-                />
-                <button
-                    type="submit"
-                    disabled={createProjectMutation.isPending}
-                    className="bg-violet-600 hover:bg-violet-500 text-white px-6 py-2 rounded-md shadow-[0_0_15px_rgba(124,58,237,0.3)] hover:shadow-[0_0_25px_rgba(124,58,237,0.5)] transition-all disabled:opacity-50"
-                >
-                    {createProjectMutation.isPending ? "Creating..." : "Create"}
-                </button>
-            </form>
+            {/* Create Project Form Container */}
+            <Can permission="project:manage">
+                <form onSubmit={handleSubmit} className="bg-zinc-900 border border-white/10 rounded-xl p-6 flex gap-4 text-zinc-50 items-center">
+                    <input
+                        type="text"
+                        value={name}
+                        onChange={(e)=> setName(e.target.value)}
+                        placeholder="Project Name"
+                        className="bg-zinc-950 border border-white/10 rounded-md p-2 flex-1 outline-none focus:border-violet-500 transition-colors"
+                    />
+                    <input
+                        type="text"
+                        value={description}
+                        onChange={(e)=> setDescription(e.target.value)}
+                        placeholder="Description"
+                        className="bg-zinc-950 border border-white/10 rounded-md p-2 flex-1 outline-none focus:border-violet-500 transition-colors"
+                    />
+                    <button
+                        type="submit"
+                        disabled={createProjectMutation.isPending}
+                        className="bg-violet-600 hover:bg-violet-500 text-white px-6 py-2 rounded-md shadow-[0_0_15px_rgba(124,58,237,0.3)] hover:shadow-[0_0_25px_rgba(124,58,237,0.5)] transition-all disabled:opacity-50"
+                    >
+                        {createProjectMutation.isPending ? "Creating..." : "Create"}
+                    </button>
+                </form>
+            </Can>
             
             {/* Table Container */}
             <div className="bg-zinc-900 border border-white/10 rounded-xl overflow-hidden">
