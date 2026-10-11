@@ -21,25 +21,22 @@ export class OrganizationsService {
     }
 
     async getUserOrganizations(userId: string) {
-        return await this.prisma.organization.findMany({ 
+        const orgs = await this.prisma.organization.findMany({
             where: {
-                memberships : {
-                    some: {
-                        userId: userId,
-                    }
-                }            
+                memberships: { some: { userId } },
             },
-            include : {
+            include: {
                 memberships: {
-                    where: {
-                        userId: userId
-                    },
-                    select: {
-                        role:true,
-                    }
-                }
-            }
+                    where: { userId },
+                    select: { role: true },
+                },
+            },
         });
+
+        return orgs.map(({ memberships, ...org }) => ({
+            ...org,
+            role: memberships[0].role,
+        }));
     }
 
     async getOrganizationById(userId: string, orgId: string) {
