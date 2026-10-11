@@ -129,30 +129,6 @@ export function AppLayout() {
                 </div>
             </main>
 
-            {/* The Logout Confirmation Modal */}
-            <Modal 
-                isOpen={isLogoutModalOpen} 
-                onClose={() => setIsLogoutModalOpen(false)} 
-                title="Confirm Logout"
-            >
-                <div className="text-zinc-300 mb-6">
-                    Are you sure you want to log out of TaskFlow? You will need to sign in again to access your projects.
-                </div>
-                <div className="flex justify-end gap-3">
-                    <button
-                        onClick={() => setIsLogoutModalOpen(false)}
-                        className="px-4 py-2 rounded-md text-zinc-300 hover:text-white hover:bg-zinc-800 transition-colors"
-                    >
-                        Cancel
-                    </button>
-                    <button
-                        onClick={handleLogout}
-                        className="bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-md shadow-[0_0_15px_rgba(220,38,38,0.3)] hover:shadow-[0_0_25px_rgba(220,38,38,0.5)] transition-all"
-                    >
-                        Log Out
-                    </button>
-                </div>
-            </Modal>
             <ConfirmModal
                 isOpen={isLogoutModalOpen}
                 onClose={() => setIsLogoutModalOpen(false)}
