@@ -1,8 +1,11 @@
 import { api,  } from '../lib/api';
 
+export type Role = 'OWNER' | 'ADMIN' | 'MEMBER';
+
 export interface Organization {
-  id: string;
-  name: string;
+    id: string;
+    name: string;
+    role: Role;
 }
 
 export const getOrganizations = async (): Promise<Organization[]> => { 
