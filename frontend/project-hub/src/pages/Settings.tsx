@@ -2,7 +2,6 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useOrganization } from "../contexts/OrganizationContext";
 import { updateOrganization, deleteOrganization, type Organization } from "../api/organizations";
-import { Modal } from "../components/Modal";
 import { useNavigate } from "react-router-dom";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { Can } from "../components/Can";
