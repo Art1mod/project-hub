@@ -44,3 +44,8 @@ export const updateTask = async ({taskId, data}: {taskId:string, data: Partial<C
     const response = await api.patch<Task>(`/tasks/${taskId}`, data);
     return response.data;
 }
+
+export const deleteTask = async (taskId: string): Promise<Task> => {
+  const response = await api.delete<Task>(`/tasks/${taskId}`);
+  return response.data;
+}
