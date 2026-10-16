@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useParams } from "react-router-dom";
-import { getTasks, updateTask, type CreateTaskProps} from "../api/tasks";
+import { getTasks, updateTask, type CreateTaskProps, type Task} from "../api/tasks";
 import { getProject, updateProject, deleteProject, type UpdateProjectInput } from "../api/projects";
 import { InlineEditable } from "../components/InlineEditable";
 import { useOrganization } from "../contexts/OrganizationContext";
@@ -9,12 +9,14 @@ import { ConfirmModal } from "../components/ConfirmModal";
 import { CreateTaskModal } from "../components/tasks/CreateTaskModal";
 import { TaskTable } from "../components/tasks/TaskTable";
 import { usePermissions } from "../hooks/usePermissions";
+import { EditTaskModal } from "../components/tasks/EditTaskModal";
 
 export function ProjectDetails() {
     const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isDeleted, setIsDeleted] = useState(false);
+    const [editingTask, setEditingTask] = useState<Task | null>(null);
 
     const queryClient = useQueryClient();
     const { projectId } = useParams<{ projectId: string }>();
@@ -167,10 +169,13 @@ export function ProjectDetails() {
             <TaskTable
                 tasks={tasks ?? []}
                 onUpdate={(taskId, data) => updateTaskMutation.mutate({ taskId, data })}
+                onEdit={setEditingTask}
                 isUpdating={updateTaskMutation.isPending}
             />
 
             <CreateTaskModal projectId={projectId!} isOpen={isCreateTaskOpen} onClose={() => setIsCreateTaskOpen(false)} />
+            <EditTaskModal task={editingTask} projectId={projectId!} onClose={() => setEditingTask(null)} />
+                
             <ConfirmModal
                 isOpen={isDeleteModalOpen}
                 onClose={closeDeleteModal}
