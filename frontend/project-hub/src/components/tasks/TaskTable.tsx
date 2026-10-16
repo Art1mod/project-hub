@@ -4,13 +4,14 @@ import { PRIORITY_OPTIONS, STATUS_OPTIONS } from "../../constants/tasks";
 interface TaskTableProps {
     tasks: Task[];
     onUpdate: (taskId: string, data: Partial<CreateTaskProps>) => void;
+    onEdit: (task: Task) => void;
     isUpdating?: boolean;
 }
 
 const selectClass =
     "bg-zinc-800 border border-transparent hover:border-white/20 focus:border-violet-500 rounded-md px-2 py-1 text-xs outline-none cursor-pointer transition-colors disabled:opacity-50";
 
-export function TaskTable({ tasks, onUpdate, isUpdating = false }: TaskTableProps) {
+export function TaskTable({ tasks, onUpdate, onEdit, isUpdating = false }: TaskTableProps) {
     return (
         <div className="bg-zinc-900 border border-white/10 rounded-xl overflow-hidden">
             <table className="w-full text-left text-sm whitespace-nowrap">
@@ -19,12 +20,13 @@ export function TaskTable({ tasks, onUpdate, isUpdating = false }: TaskTableProp
                         <th className="px-4 py-3 font-medium">Title</th>
                         <th className="px-4 py-3 font-medium text-center">Status</th>
                         <th className="px-4 py-3 font-medium text-center">Priority</th>
+                        <th className="px-4 py-3 font-medium text-right"></th>
                     </tr>
                 </thead>
                 <tbody>
                     {tasks.length === 0 ? (
                         <tr>
-                            <td colSpan={3} className="px-4 py-12 text-center">
+                            <td colSpan={4} className="px-4 py-12 text-center">
                                 <div className="text-zinc-400">
                                     <p className="text-base font-medium text-zinc-200">No tasks yet</p>
                                     <p className="mt-1 text-sm">Create a task to get started.</p>
@@ -61,6 +63,16 @@ export function TaskTable({ tasks, onUpdate, isUpdating = false }: TaskTableProp
                                             <option key={o.value} value={o.value}>{o.label}</option>
                                         ))}
                                     </select>
+                                </td>
+                                <td className="px-4 py-3 text-right">
+                                    <button
+                                        type="button"
+                                        onClick={() => onEdit(task)}
+                                        title="Edit task"
+                                        className="rounded-md px-2 py-1 text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-white"
+                                    >
+                                        ⚙
+                                    </button>
                                 </td>
                             </tr>
                         ))
