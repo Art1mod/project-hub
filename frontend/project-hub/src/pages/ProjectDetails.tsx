@@ -1,26 +1,26 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useNavigate, useParams } from "react-router-dom";
-import { getTasks, updateTask, type CreateTaskProps, type Task} from "../api/tasks";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { getTasks, updateTask, type CreateTaskProps, type Task } from "../api/tasks";
 import { getProject, updateProject, deleteProject, type UpdateProjectInput } from "../api/projects";
 import { InlineEditable } from "../components/InlineEditable";
 import { useOrganization } from "../contexts/OrganizationContext";
+import { usePermissions } from "../hooks/usePermissions";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { CreateTaskModal } from "../components/tasks/CreateTaskModal";
 import { TaskTable } from "../components/tasks/TaskTable";
-import { usePermissions } from "../hooks/usePermissions";
-import { EditTaskModal } from "../components/tasks/EditTaskModal";
+import { TaskPanel } from "../components/tasks/TaskPanel";
 
 export function ProjectDetails() {
     const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isDeleted, setIsDeleted] = useState(false);
-    const [editingTask, setEditingTask] = useState<Task | null>(null);
 
     const queryClient = useQueryClient();
     const { projectId } = useParams<{ projectId: string }>();
     const navigate = useNavigate();
+    const [searchParams, setSearchParams] = useSearchParams();
     const menuRef = useRef<HTMLDivElement>(null);
 
     const { activeOrgId } = useOrganization();
@@ -59,6 +59,11 @@ export function ProjectDetails() {
         enabled: !!projectId && !isDeleted,
     });
 
+    // The selected task lives in the URL (?task=<id>) so a refresh or shared link reopens it
+    const selectedTask = tasks?.find((t) => t.id === searchParams.get("task")) ?? null;
+    const selectTask = (task: Task) => setSearchParams({ task: task.id }, { replace: true });
+    const closePanel = () => setSearchParams({}, { replace: true });
+
     const updateTaskMutation = useMutation({
         mutationFn: ({ taskId, data }: { taskId: string, data: Partial<CreateTaskProps> }) =>
             updateTask({ taskId, data }),
@@ -72,7 +77,7 @@ export function ProjectDetails() {
         onSuccess: async () => {
             await Promise.all([
                 queryClient.invalidateQueries({ queryKey: ['project', projectId] }),
-                queryClient.invalidateQueries({ queryKey: ['projects'] }), 
+                queryClient.invalidateQueries({ queryKey: ['projects'] }),
             ]);
         },
     });
@@ -80,7 +85,7 @@ export function ProjectDetails() {
     const deleteProjectMutation = useMutation({
         mutationFn: () => deleteProject(projectId!),
         onSuccess: () => {
-            setIsDeleted(true); 
+            setIsDeleted(true);
             navigate('/projects');
             queryClient.removeQueries({ queryKey: ['project', projectId] });
             queryClient.removeQueries({ queryKey: ['tasks', projectId] });
@@ -165,17 +170,30 @@ export function ProjectDetails() {
                     Failed to update project. Please try again.
                 </p>
             )}
-            
-            <TaskTable
-                tasks={tasks ?? []}
-                onUpdate={(taskId, data) => updateTaskMutation.mutate({ taskId, data })}
-                onEdit={setEditingTask}
-                isUpdating={updateTaskMutation.isPending}
-            />
+
+            <div className="flex items-start">
+                <div className="min-w-0 flex-1 overflow-x-auto">
+                    <TaskTable
+                        tasks={tasks ?? []}
+                        onUpdate={(taskId, data) => updateTaskMutation.mutate({ taskId, data })}
+                        onSelect={selectTask}
+                        selectedId={selectedTask?.id}
+                        isUpdating={updateTaskMutation.isPending}
+                    />
+                </div>
+
+                {selectedTask && (
+                    <TaskPanel
+                        key={selectedTask.id}
+                        task={selectedTask}
+                        projectId={projectId!}
+                        onUpdate={(taskId, data) => updateTaskMutation.mutate({ taskId, data })}
+                        onClose={closePanel}
+                    />
+                )}
+            </div>
 
             <CreateTaskModal projectId={projectId!} isOpen={isCreateTaskOpen} onClose={() => setIsCreateTaskOpen(false)} />
-            <EditTaskModal task={editingTask} projectId={projectId!} onClose={() => setEditingTask(null)} />
-                
             <ConfirmModal
                 isOpen={isDeleteModalOpen}
                 onClose={closeDeleteModal}
