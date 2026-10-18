@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { getTasks, updateTask, type CreateTaskProps, type Task } from "../api/tasks";
 import { getProject, updateProject, deleteProject, type UpdateProjectInput } from "../api/projects";
@@ -10,7 +10,10 @@ import { ConfirmModal } from "../components/ConfirmModal";
 import { CreateTaskModal } from "../components/tasks/CreateTaskModal";
 import { TaskTable } from "../components/tasks/TaskTable";
 import { TaskPanel } from "../components/tasks/TaskPanel";
-import { sortTasks } from "../constants/tasks";
+import { sortTaskPage } from "../constants/tasks";
+import { Pagination } from "../components/Pagination";
+
+const TASKS_PER_PAGE = 10; 
 
 export function ProjectDetails() {
     const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
@@ -55,17 +58,43 @@ export function ProjectDetails() {
     });
 
 
-    const { data: tasks, isLoading, isError } = useQuery({
-        queryKey: ['tasks', projectId],
-        queryFn: () => getTasks(projectId!),
+   const page = Math.max(1, Number(searchParams.get("page")) || 1);
+
+    const { data: tasksPage, isLoading, isError, isPlaceholderData } = useQuery({
+        queryKey: ['tasks', projectId, page],
+        queryFn: () => getTasks(projectId!, page, TASKS_PER_PAGE),
         enabled: !!projectId && !isDeleted,
-        select: sortTasks,
+        placeholderData: keepPreviousData,
+        select: sortTaskPage,
     });
 
-    // The selected task lives in the URL (?task=<id>) so a refresh or shared link reopens it
-    const selectedTask = tasks?.find((t) => t.id === searchParams.get("task")) ?? null;
-    const selectTask = (task: Task) => setSearchParams({ task: task.id }, { replace: true });
-    const closePanel = () => setSearchParams({}, { replace: true });
+    const tasks = tasksPage?.data ?? [];
+    const meta = tasksPage?.meta;
+
+    const selectedTask = tasks.find((t) => t.id === searchParams.get("task")) ?? null;
+
+    // Update one URL param without wiping the others
+    const updateParams = (change: (p: URLSearchParams) => void) =>
+        setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            change(next);
+            return next;
+        }, { replace: true });
+
+    const selectTask = (task: Task) => updateParams((p) => p.set("task", task.id));
+    const closePanel = () => updateParams((p) => p.delete("task"));
+    const goToPage = (n: number) =>
+        updateParams((p) => {
+            p.set("page", String(n));
+            p.delete("task"); // the selected task isn't on the new page
+        });
+
+    // If the current page no longer exists (e.g. the last task on it was deleted), step back
+    useEffect(() => {
+        if (meta && !isPlaceholderData && meta.totalPages > 0 && page > meta.totalPages) {
+            updateParams((p) => p.set("page", String(meta.totalPages)));
+        }
+    }, [meta, isPlaceholderData, page]);
 
     const updateTaskMutation = useMutation({
         mutationFn: ({ taskId, data }: { taskId: string, data: Partial<CreateTaskProps> }) =>
@@ -176,13 +205,27 @@ export function ProjectDetails() {
 
             <div className="flex items-start">
                 <div className="min-w-0 flex-1 overflow-x-auto">
-                    <TaskTable
-                        tasks={tasks ?? []}
-                        onUpdate={(taskId, data) => updateTaskMutation.mutate({ taskId, data })}
-                        onSelect={selectTask}
-                        selectedId={selectedTask?.id}
-                        isUpdating={updateTaskMutation.isPending}
-                    />
+                    <div className="min-w-0 flex-1">
+                        <div className="overflow-x-auto">
+                            <TaskTable
+                                tasks={tasks}
+                                onUpdate={(taskId, data) => updateTaskMutation.mutate({ taskId, data })}
+                                onSelect={selectTask}
+                                selectedId={selectedTask?.id}
+                                isUpdating={updateTaskMutation.isPending}
+                            />
+                        </div>
+
+                        {meta && meta.totalPages > 1 && (
+                            <Pagination
+                                page={page}
+                                totalPages={meta.totalPages}
+                                total={meta.total}
+                                onChange={goToPage}
+                                disabled={isPlaceholderData}
+                            />
+                        )}
+                    </div>
                 </div>
 
                 {selectedTask && (
