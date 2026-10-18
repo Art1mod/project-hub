@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useOrganization } from "../contexts/OrganizationContext";
 import { Can } from "../components/Can";
+import { sortProjects } from "../constants/projects";
 
 export function Projects () {
     const {activeOrgId} = useOrganization();
@@ -16,7 +17,8 @@ export function Projects () {
     const {data: projects, isLoading, isError} = useQuery({
         queryKey: ['projects', activeOrgId],
         queryFn: () => getProjects(activeOrgId!),
-        enabled: !!activeOrgId, 
+        enabled: !!activeOrgId,
+        select: sortProjects  
     });
 
     const createProjectMutation = useMutation({
