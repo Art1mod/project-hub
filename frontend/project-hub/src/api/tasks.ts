@@ -30,9 +30,16 @@ export interface Paginated<T> {
   meta: PaginationMeta;
 }
 
-export const getTasks = async (projectId: string): Promise<Task[]> => {
-  const response = await api.get<Paginated<Task>>(`/projects/${projectId}/tasks`);
-  return response.data.data;
+export const getTasks = async (
+    projectId: string,
+    page = 1,
+    limit = 10,
+): Promise<Paginated<Task>> => {
+    const response = await api.get<Paginated<Task>>(`/projects/${projectId}/tasks`, {
+        params: { page, limit },
+    });
+    console.log(response);
+    return response.data;
 };
 
 export const createTask = async ({ projectId, data }: {projectId: string, data: CreateTaskProps}): Promise<Task> => {
