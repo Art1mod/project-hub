@@ -1,4 +1,4 @@
-import type { Priority, Status, Task } from "../api/tasks";
+import type { Paginated, Priority, Status, Task } from "../api/tasks";
 
 export const STATUS_OPTIONS: { value: Status; label: string }[] = [
     { value: "TODO", label: "To Do" },
@@ -21,3 +21,8 @@ export const sortTasks = (tasks: Task[]) =>
     PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority] ||
     a.title.localeCompare(b.title, undefined, { sensitivity: "base", numeric: true }),
 );
+
+export const sortTaskPage = (res: Paginated<Task>): Paginated<Task> => ({
+    ...res,
+    data: sortTasks(res.data),
+});
