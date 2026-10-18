@@ -10,6 +10,7 @@ import { ConfirmModal } from "../components/ConfirmModal";
 import { CreateTaskModal } from "../components/tasks/CreateTaskModal";
 import { TaskTable } from "../components/tasks/TaskTable";
 import { TaskPanel } from "../components/tasks/TaskPanel";
+import { sortTasks } from "../constants/tasks";
 
 export function ProjectDetails() {
     const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
@@ -53,10 +54,12 @@ export function ProjectDetails() {
         enabled: !!projectId && !isDeleted,
     });
 
+
     const { data: tasks, isLoading, isError } = useQuery({
         queryKey: ['tasks', projectId],
         queryFn: () => getTasks(projectId!),
         enabled: !!projectId && !isDeleted,
+        select: sortTasks,
     });
 
     // The selected task lives in the URL (?task=<id>) so a refresh or shared link reopens it
