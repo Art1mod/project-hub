@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useOrganization } from "../contexts/OrganizationContext";
-import { createInvitation, getPendingInvitations, type CreateInvitationProps} from "../api/invitations";
+import { cancelInvitation, createInvitation, getPendingInvitations, type CreateInvitationProps} from "../api/invitations";
 import { useState } from "react";
 import type { Role } from "../api/organizations";
+import { usePermissions } from "../hooks/usePermissions";
+import { ConfirmModal } from "../components/ConfirmModal";
 
 export function Invitations () {
     const { activeOrgId } = useOrganization();
@@ -10,6 +12,8 @@ export function Invitations () {
 
     const [email, setEmail] = useState("");
     const [role, setRole] = useState<Role>("MEMBER");
+    const { role: myRole } = usePermissions();
+    const [invitationToCancel, setInvitationToCancel] = useState<any | null>(null); 
     
     const createInvitationMutation = useMutation({
         mutationFn: (data: CreateInvitationProps) => 
@@ -35,6 +39,22 @@ export function Invitations () {
         if (!email || !activeOrgId) return;
         createInvitationMutation.mutate({ email, role });
     };
+
+    const cancelMutation = useMutation({
+        mutationFn: (invitationId: string) => cancelInvitation(activeOrgId!, invitationId),
+        onSuccess: async () => {
+            await queryClient.invalidateQueries({ queryKey: ['invitations', activeOrgId] });
+            setInvitationToCancel(null);
+        },
+    });
+
+    const closeCancelModal = () => {
+        setInvitationToCancel(null);
+        cancelMutation.reset();
+    };
+
+    const canCancel = (invitation: { role: Role }) =>
+        myRole === "OWNER" || invitation.role !== "OWNER";
 
     if (isLoading) return <div className="text-zinc-400">Loading invitations...</div>;
     if (isError) return <div className="text-red-500">Error fetching invitations...</div>;
@@ -75,12 +95,13 @@ export function Invitations () {
                             <th className="px-4 py-3 font-medium">Email</th>
                             <th className="px-4 py-3 font-medium text-center">Role</th>
                             <th className="px-4 py-3 font-medium text-right">Status</th>
+                            <th className="px-4 py-3 font-medium text-right"></th>
                         </tr>
                     </thead> 
                     <tbody>
                         {invitations?.length === 0 ? (
                             <tr>
-                                <td colSpan={3} className="px-4 py-12 text-center text-zinc-400">
+                                <td colSpan={4} className="px-4 py-12 text-center text-zinc-400">
                                     No pending invitations.
                                 </td>            
                             </tr>
@@ -103,12 +124,34 @@ export function Invitations () {
                                             Pending
                                         </span>
                                     </td>
+                                    <td className="px-4 py-3 text-right">
+                                        {canCancel(invitation) && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setInvitationToCancel(invitation)}
+                                                className="rounded-md px-3 py-1 text-sm text-red-400 transition-colors hover:bg-red-500/10"
+                                            >
+                                                Revoke 
+                                            </button>
+                                        )}
+                                    </td>
                                 </tr>    
                             ))
                         )}
                     </tbody>
                 </table>      
-            </div>    
+            </div> 
+            <ConfirmModal
+                isOpen={!!invitationToCancel}
+                onClose={closeCancelModal}
+                onConfirm={() => invitationToCancel && cancelMutation.mutate(invitationToCancel.id)}
+                title="Revoke Invitation"
+                message={<>Revoke the invitation for {invitationToCancel?.email}? The invitation link will stop working.</>}
+                confirmLabel="Revoke invitation"
+                pendingLabel="Cancelling..."
+                isPending={cancelMutation.isPending}
+                error={cancelMutation.isError ? "Failed to cancel invitation. Please try again." : null}
+            />   
         </div>
     );
 }
