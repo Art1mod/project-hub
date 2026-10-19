@@ -10,7 +10,6 @@ import { ConfirmModal } from "../components/ConfirmModal";
 import { CreateTaskModal } from "../components/tasks/CreateTaskModal";
 import { TaskTable } from "../components/tasks/TaskTable";
 import { TaskPanel } from "../components/tasks/TaskPanel";
-import { sortTaskPage } from "../constants/tasks";
 import { Pagination } from "../components/Pagination";
 
 const TASKS_PER_PAGE = 10; 
@@ -65,7 +64,6 @@ export function ProjectDetails() {
         queryFn: () => getTasks(projectId!, page, TASKS_PER_PAGE),
         enabled: !!projectId && !isDeleted,
         placeholderData: keepPreviousData,
-        select: sortTaskPage,
     });
 
     const tasks = tasksPage?.data ?? [];
