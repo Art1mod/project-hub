@@ -15,6 +15,7 @@ export class TasksService {
 
     
     private async assertAssigneeInProjectOrg(assigneeId: string, projectId: string) {
+        if (!assigneeId) return;
         const membership = await this.prisma.membership.findFirst({
             where: {
                 userId: assigneeId,
@@ -23,6 +24,7 @@ export class TasksService {
         });
         if (!membership) throw new BadRequestException("Assignee must be a member of this project's organization");
     }
+    
 
     async createTask(userId: string, projectId: string, data: CreateTaskDto) {
         await this.projectsService.getProjectById(userId, projectId);
@@ -115,17 +117,16 @@ export class TasksService {
                 where: whereObject,
                 skip: skip,
                 take: limit,
+                include: { assignee: { select: { id: true, email: true } } },
                 orderBy: [
-                    { status: 'asc' },     // TODO, IN_PROGRESS, DONE
-                    { priority: 'desc' },  // URGENT, HIGH, MEDIUM, LOW
+                    { status: 'asc' },     
+                    { priority: 'desc' },  
                     { title: 'asc' },
-                    { id: 'asc' },         // tiebreaker so pages never overlap or skip rows
+                    { id: 'asc' },       
                 ],
             }),
             this.prisma.task.count({ where: whereObject })
         ]);
-
-        
 
         const totalPages = Math.ceil(total / limit);
         return { data: tasks, meta: { total, page, limit, totalPages } };
