@@ -100,6 +100,27 @@ export class InvitationsService {
         });
     }
 
+    async cancelInvitation(userId: string, orgId: string, invitationId: string) {
+        const requesterMembership = await this.prisma.membership.findFirst({
+            where: { organizationId: orgId, userId, role: { in: ['OWNER', 'ADMIN'] } },
+        });
+        if (!requesterMembership) {
+            throw new ForbiddenException("You do not have permission to cancel invitations");
+        }
+
+        const invitation = await this.prisma.invitation.findFirst({
+            where: { id: invitationId, organizationId: orgId },
+        });
+        if (!invitation) throw new NotFoundException("Invitation not found");
+
+        if (invitation.role === 'OWNER' && requesterMembership.role !== 'OWNER') {
+            throw new ForbiddenException("Only an owner can cancel an owner invitation");
+        }
+
+        await this.prisma.invitation.delete({ where: { id: invitation.id } });
+        return { message: "Invitation cancelled" };
+    }
+
     async getPendingInvitations(orgId: string) {
         return await this.prisma.invitation.findMany({
             where: {
