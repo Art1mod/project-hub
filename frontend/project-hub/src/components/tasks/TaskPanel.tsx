@@ -5,6 +5,7 @@ import { InlineEditable } from "../InlineEditable";
 import { ConfirmModal } from "../ConfirmModal";
 import { PRIORITY_OPTIONS, STATUS_OPTIONS } from "../../constants/tasks";
 import { useResizableWidth } from "../../hooks/useResizableWidth";
+import { AssigneeSelect } from "./AssigneeSelect";
 
 interface TaskPanelProps {
     task: Task;
@@ -105,6 +106,16 @@ export function TaskPanel({ task, projectId, onUpdate, onClose }: TaskPanelProps
                                 <option key={o.value} value={o.value}>{o.label}</option>
                             ))}
                         </select>
+                    </div>
+
+                    <div className="flex flex-col gap-2">
+                        <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Assignee</span>
+                        <AssigneeSelect
+                            value={task.assignee?.id ?? null}
+                            current={task.assignee}
+                            onChange={(assigneeId) => onUpdate(task.id, { assigneeId })}
+                            className={`${selectClass} w-full`}
+                        />
                     </div>
                 </div>
 
