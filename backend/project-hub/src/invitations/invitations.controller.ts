@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Param, UseGuards, Get } from '@nestjs/common';
+import { Controller, Post, Body, Param, UseGuards, Get, Delete } from '@nestjs/common';
 import { InvitationsService } from './invitations.service';
 import { CreateInvitationDto } from './dto/create-invitation-dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -27,6 +27,16 @@ export class InvitationsController {
     @CurrentUser() user: {userId: string}  
   ){
     return this.invitationsService.acceptInvitation(user.userId, body.token);
+  }
+
+  @Delete('organizations/:orgId/invitations/:invitationId')
+  @Roles('OWNER', 'ADMIN')
+  cancelInvitation(
+    @Param('orgId') orgId: string,
+    @Param('invitationId') invitationId: string,
+    @CurrentUser() user: { userId: string },
+  ) {
+    return this.invitationsService.cancelInvitation(user.userId, orgId, invitationId);
   }
 
   @Get('organizations/:orgId/invitations')
