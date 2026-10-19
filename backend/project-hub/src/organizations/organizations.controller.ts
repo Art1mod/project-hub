@@ -52,4 +52,14 @@ export class OrganizationsController {
   ) {
     return this.organizationsService.getMembers(user.userId, orgId);
   }
+
+  @Delete(':orgId/members/:memberId')
+  removeMember(
+    @Param('orgId') orgId: string,
+    @Param('memberId') memberId: string,
+    @CurrentUser() user: { userId: string },
+  ) {
+    return this.organizationsService.removeUserFromOrganization(user.userId, orgId, memberId);   
+  }
+
 }
