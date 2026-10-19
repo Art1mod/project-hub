@@ -25,3 +25,7 @@ export const acceptInvitation = async (token:string) => {
     const response = await api.post('/invitations/accept', {token});
     return response.data;
 }
+
+export const cancelInvitation = async (orgId: string, invitationId: string): Promise<void> => {
+    await api.delete(`/organizations/${orgId}/invitations/${invitationId}`);
+};
