@@ -1,7 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useOrganization } from "../contexts/OrganizationContext";
-import { createInvitation, getPendingInvitations, type CreateInvitationProps, type Role } from "../api/invitations";
+import { createInvitation, getPendingInvitations, type CreateInvitationProps} from "../api/invitations";
 import { useState } from "react";
+import type { Role } from "../api/organizations";
 
 export function Invitations () {
     const { activeOrgId } = useOrganization();
