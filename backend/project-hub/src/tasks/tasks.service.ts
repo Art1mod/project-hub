@@ -115,10 +115,17 @@ export class TasksService {
                 where: whereObject,
                 skip: skip,
                 take: limit,
-                orderBy: { createdAt: 'desc' }
+                orderBy: [
+                    { status: 'asc' },     // TODO, IN_PROGRESS, DONE
+                    { priority: 'desc' },  // URGENT, HIGH, MEDIUM, LOW
+                    { title: 'asc' },
+                    { id: 'asc' },         // tiebreaker so pages never overlap or skip rows
+                ],
             }),
             this.prisma.task.count({ where: whereObject })
         ]);
+
+        
 
         const totalPages = Math.ceil(total / limit);
         return { data: tasks, meta: { total, page, limit, totalPages } };
