@@ -1,4 +1,4 @@
-import type { Paginated, Priority, Status, Task } from "../api/tasks";
+import type { Priority, Status } from "../api/tasks";
 
 export const STATUS_OPTIONS: { value: Status; label: string }[] = [
     { value: "TODO", label: "To Do" },
