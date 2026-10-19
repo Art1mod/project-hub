@@ -3,12 +3,18 @@ import { api } from '../lib/api';
 export type Status = 'TODO' | 'IN_PROGRESS' | 'DONE';
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
+export interface Assignee {
+  id: string;
+  email: string;
+}
+
 export interface Task {
   id: string;
   title: string;
   description?: string | null;
   status: Status;
   priority: Priority;
+  assignee?: Assignee | null;
 }
 
 export interface CreateTaskProps {
@@ -16,6 +22,7 @@ export interface CreateTaskProps {
     description: string;
     status: Status;
     priority: Priority;
+    assigneeId?: string | null;
 }
 
 export interface PaginationMeta {
@@ -38,7 +45,6 @@ export const getTasks = async (
     const response = await api.get<Paginated<Task>>(`/projects/${projectId}/tasks`, {
         params: { page, limit },
     });
-    console.log(response);
     return response.data;
 };
 
