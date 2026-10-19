@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createTask, type Priority, type Status } from "../../api/tasks";
 import { Modal } from "../Modal";
 import { STATUS_OPTIONS, PRIORITY_OPTIONS } from "../../constants/tasks";
+import { AssigneeSelect } from "./AssigneeSelect";
 
 interface CreateTaskModalProps {
     projectId: string;
@@ -17,16 +18,18 @@ export function CreateTaskModal({ projectId, isOpen, onClose }: CreateTaskModalP
     const [description, setDescription] = useState("");
     const [status, setStatus] = useState<Status>("TODO");
     const [priority, setPriority] = useState<Priority>("MEDIUM");
+    const [assigneeId, setAssigneeId] = useState<string | null>(null);
 
     const resetForm = () => {
         setTitle("");
         setDescription("");
         setStatus("TODO");
         setPriority("MEDIUM");
+        setAssigneeId(null);
     };
 
     const createTaskMutation = useMutation({
-        mutationFn: () => createTask({ projectId, data: { title, description, status, priority } }),
+        mutationFn: () =>  createTask({ projectId, data: { title, description, status, priority, assigneeId } }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
             resetForm();
@@ -89,6 +92,14 @@ export function CreateTaskModal({ projectId, isOpen, onClose }: CreateTaskModalP
                                     <option key={o.value} value={o.value}>{o.label}</option>
                                 ))}
                             </select>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                            <label className="text-sm text-zinc-400">Assignee</label>
+                            <AssigneeSelect
+                                value={assigneeId}
+                                onChange={setAssigneeId}
+                                className="w-full bg-zinc-950 border border-white/10 rounded-md p-2 outline-none focus:border-violet-500 transition-colors"
+                            />
                         </div>
                     </div>
 
