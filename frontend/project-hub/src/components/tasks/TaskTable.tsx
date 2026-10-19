@@ -21,12 +21,13 @@ export function TaskTable({ tasks, onUpdate, onSelect, selectedId, isUpdating = 
                         <th className="px-4 py-3 font-medium">Title</th>
                         <th className="px-4 py-3 font-medium text-center">Status</th>
                         <th className="px-4 py-3 font-medium text-center">Priority</th>
+                        <th className="px-4 py-3 font-medium">Assignee</th>
                     </tr>
                 </thead>
                 <tbody>
                     {tasks.length === 0 ? (
                         <tr>
-                            <td colSpan={3} className="px-4 py-12 text-center">
+                            <td colSpan={4} className="px-4 py-12 text-center">
                                 <div className="text-zinc-400">
                                     <p className="text-base font-medium text-zinc-200">No tasks yet</p>
                                     <p className="mt-1 text-sm">Create a task to get started.</p>
@@ -68,6 +69,9 @@ export function TaskTable({ tasks, onUpdate, onSelect, selectedId, isUpdating = 
                                             <option key={o.value} value={o.value}>{o.label}</option>
                                         ))}
                                     </select>
+                                </td>
+                                <td className="px-4 py-3 text-zinc-300 max-w-50 truncate">
+                                    {task.assignee?.email ?? <span className="text-zinc-500"></span>}
                                 </td>
                             </tr>
                         ))
