@@ -6,6 +6,7 @@ import { ConfirmModal } from "../ConfirmModal";
 import { PRIORITY_OPTIONS, STATUS_OPTIONS } from "../../constants/tasks";
 import { useResizableWidth } from "../../hooks/useResizableWidth";
 import { AssigneeSelect } from "./AssigneeSelect";
+import { TaskAttachments } from "./TaskAttachments";
 
 interface TaskPanelProps {
     task: Task;
@@ -118,6 +119,8 @@ export function TaskPanel({ task, projectId, onUpdate, onClose }: TaskPanelProps
                         />
                     </div>
                 </div>
+
+                <TaskAttachments taskId={task.id} />
 
                 <div className="flex justify-end mt-2 border-t border-white/10 pt-3">
                     <button
