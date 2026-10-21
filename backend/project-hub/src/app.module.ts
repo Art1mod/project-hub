@@ -15,7 +15,7 @@ import { AttachmentsModule } from './attachments/attachments.module';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     AuthModule, 
-    PrismaModule, OrganizationsModule, ProjectsModule, TasksModule, InvitationsModule, StorageModule, AttachmentsModule
+    PrismaModule, OrganizationsModule, ProjectsModule, TasksModule, InvitationsModule, StorageModule, AttachmentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
