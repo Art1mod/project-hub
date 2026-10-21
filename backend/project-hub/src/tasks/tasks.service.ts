@@ -5,13 +5,16 @@ import { ProjectsService } from '../projects/projects.service';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { GetTasksFilterDto } from './dto/get-tasks-filter.dto';
+import { StorageService } from '../storage/storage.service';
 
 
 @Injectable()
 export class TasksService {
     constructor ( 
         private readonly projectsService: ProjectsService, 
-        private prisma: PrismaService) {}
+        private prisma: PrismaService,
+        private readonly storage: StorageService,    
+    ) {}
 
     
     private async assertAssigneeInProjectOrg(assigneeId: string, projectId: string) {
@@ -93,11 +96,15 @@ export class TasksService {
 
         if (!task) throw new NotFoundException("Task not found or access denied"); 
         
-        return await this.prisma.task.delete( {
-            where: {
-                id: task.id
-            }
+        const attachments = await this.prisma.attachment.findMany({
+            where: { taskId },
+            select: { storageKey: true },
         });
+
+        const deleted = await this.prisma.task.delete({ where: { id: taskId } });
+
+        await this.storage.deleteMany(attachments.map((a) => a.storageKey)).catch(() => {});
+        return deleted;
     }
 
     async getTasksByProjectId(userId: string, projectId: string, filters: GetTasksFilterDto) {
