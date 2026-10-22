@@ -10,12 +10,13 @@ import { TasksModule } from './tasks/tasks.module';
 import { InvitationsModule } from './invitations/invitations.module';
 import { StorageModule } from './storage/storage.module';
 import { AttachmentsModule } from './attachments/attachments.module';
+import { AnalyticsModule } from './analytics/analytics.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     AuthModule, 
-    PrismaModule, OrganizationsModule, ProjectsModule, TasksModule, InvitationsModule, StorageModule, AttachmentsModule,
+    PrismaModule, OrganizationsModule, ProjectsModule, TasksModule, InvitationsModule, StorageModule, AttachmentsModule, AnalyticsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
