@@ -103,7 +103,7 @@ export class TasksService {
 
         const deleted = await this.prisma.task.delete({ where: { id: taskId } });
 
-        await this.storage.deleteMany(attachments.map((a) => a.storageKey)).catch(() => {});
+        await this.storage.deleteManyQuietly(attachments.map((a) => a.storageKey));
         return deleted;
     }
 

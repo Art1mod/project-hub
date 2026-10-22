@@ -3,12 +3,14 @@ import { OrganizationsService } from '../organizations/organizations.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateProjectDto } from './dto/update-project.dto';
+import { StorageService } from '../storage/storage.service';
 
 @Injectable()
 export class ProjectsService {
     constructor (
         private readonly organizationsService: OrganizationsService, 
-        private prisma: PrismaService 
+        private prisma: PrismaService,
+        private storage: StorageService,
     ) {}
 
     async createProject(userId: string, orgId: string, data: CreateProjectDto) {
@@ -74,9 +76,15 @@ export class ProjectsService {
 
         if (!project) throw new NotFoundException("Project not found or access denied");   
 
-        return await this.prisma.project.delete({where: {
-            id: projectId,
-        }});
+        const files = await this.prisma.attachment.findMany({
+            where: { task: { projectId } },
+            select: { storageKey: true },
+        });
+
+        const deleted = await this.prisma.project.delete({ where: { id: projectId } });
+
+        await this.storage.deleteManyQuietly(files.map((f) => f.storageKey));
+        return deleted;
     }
 
     async updateProjectById(userId: string, projectId: string, newData: UpdateProjectDto) {

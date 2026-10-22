@@ -1,10 +1,14 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
+import { StorageService } from '../storage/storage.service';
 
 @Injectable()
 export class OrganizationsService {
-    constructor(private prisma: PrismaService) {}
+    constructor(
+        private prisma: PrismaService,
+        private storage: StorageService,
+    ) {}
 
     async createOrganization(userId:string, name:string) {
         return await this.prisma.organization.create({
@@ -82,11 +86,15 @@ export class OrganizationsService {
 
         if (!organization) throw new NotFoundException("Organization not found or access denied");
 
-        return await this.prisma.organization.delete({
-            where: {
-                id: orgId
-            }
-        });     
+        const files = await this.prisma.attachment.findMany({
+            where: { task: { project: { organizationId: orgId } } },
+            select: { storageKey: true },
+        });
+
+        const deleted = await this.prisma.organization.delete({ where: { id: orgId } });
+
+        await this.storage.deleteManyQuietly(files.map((f) => f.storageKey));
+        return deleted; 
     }
 
     async updateOrganizationById(userId: string, orgId: string, newData: UpdateOrganizationDto) {
