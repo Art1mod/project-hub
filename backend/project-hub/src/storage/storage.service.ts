@@ -1,53 +1,64 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import {
     DeleteObjectCommand,
     DeleteObjectsCommand,
     GetObjectCommand,
     HeadObjectCommand,
+    ListObjectsV2Command,
     PutObjectCommand,
     S3Client,
 } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-
 @Injectable()
 export class StorageService {
+    private readonly logger = new Logger(StorageService.name);
     private readonly bucket = process.env.S3_BUCKET!;
-    private readonly client = new S3Client({
-        region: process.env.S3_REGION ?? 'auto',
-        endpoint: process.env.S3_ENDPOINT,
-        forcePathStyle: process.env.S3_FORCE_PATH_STYLE === 'true',
-        credentials: {
-            accessKeyId: process.env.S3_ACCESS_KEY_ID!,
-            secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
-        },
-        requestChecksumCalculation: 'WHEN_REQUIRED',
-        responseChecksumValidation: 'WHEN_REQUIRED',
-    });
+    readonly client: S3Client; 
+    private readonly signer: S3Client;
+
+    constructor() {
+        const config = {
+            region: process.env.S3_REGION ?? 'auto',
+            forcePathStyle: process.env.S3_FORCE_PATH_STYLE === 'true',
+            credentials: {
+                accessKeyId: process.env.S3_ACCESS_KEY_ID!,
+                secretAccessKey: process.env.S3_SECRET_ACCESS_KEY!,
+            },
+            requestChecksumCalculation: 'WHEN_REQUIRED' as const,
+            responseChecksumValidation: 'WHEN_REQUIRED' as const,
+        };
+
+        this.client = new S3Client({ ...config, endpoint: process.env.S3_ENDPOINT });
+        this.signer = new S3Client({
+            ...config,
+            endpoint: process.env.S3_PUBLIC_ENDPOINT ?? process.env.S3_ENDPOINT,
+        });
+    }
 
     getUploadUrl(key: string, contentType: string, contentLength: number) {
         return getSignedUrl(
-            this.client,
+            this.signer,
             new PutObjectCommand({
                 Bucket: this.bucket,
                 Key: key,
                 ContentType: contentType,
                 ContentLength: contentLength,
             }),
-            { expiresIn: 300 }, // 5 minutes to start the upload
+            { expiresIn: 300 },
         );
     }
 
     getDownloadUrl(key: string, filename: string, contentType: string) {
         return getSignedUrl(
-            this.client,
+            this.signer,
             new GetObjectCommand({
                 Bucket: this.bucket,
                 Key: key,
                 ResponseContentType: contentType,
                 ResponseContentDisposition: `inline; filename*=UTF-8''${encodeURIComponent(filename)}`,
             }),
-            { expiresIn: 900 }, // 15 minutes
+            { expiresIn: 900 },
         );
     }
 
@@ -72,13 +83,28 @@ export class StorageService {
         await this.client.send(new DeleteObjectCommand({ Bucket: this.bucket, Key: key }));
     }
 
+    /** Deletes in batches of 1000, the S3 limit per request. */
     async deleteMany(keys: string[]) {
-        if (keys.length === 0) return;
-        await this.client.send(
-            new DeleteObjectsCommand({
-                Bucket: this.bucket,
-                Delete: { Objects: keys.map((Key) => ({ Key })) },
-            }),
-        );
-    }        
+        for (let i = 0; i < keys.length; i += 1000) {
+            const chunk = keys.slice(i, i + 1000);
+            const res = await this.client.send(
+                new DeleteObjectsCommand({
+                    Bucket: this.bucket,
+                    Delete: { Objects: chunk.map((Key) => ({ Key })), Quiet: true },
+                }),
+            );
+            if (res.Errors?.length) {
+                this.logger.warn(`${res.Errors.length} object(s) could not be deleted, the sweep will retry`);
+            }
+        }
+    }
+
+    /** For callers whose database work already succeeded: log failures instead of throwing. */
+    async deleteManyQuietly(keys: string[]) {
+        try {
+            await this.deleteMany(keys);
+        } catch (err) {
+            this.logger.warn(`Failed to delete ${keys.length} object(s), the sweep will retry: ${err}`);
+        }
+    }
 }
