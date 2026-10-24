@@ -11,6 +11,7 @@ import { Register } from './pages/Register';
 import { AcceptInvitation } from './pages/AcceptInvitation';
 import { Settings } from './pages/Settings';
 import { RequirePermission } from './components/RequirePermission';
+import { Dashboard } from './pages/Dashboard';
 
 const queryClient = new QueryClient();
 
@@ -30,7 +31,7 @@ function App() {
             }
           >
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<div>Dashboard</div>} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/projects" element={<Projects />} />
             <Route path="/projects/:projectId" element={<ProjectDetails />} />
             <Route path="/members" element={<Members/>} />
