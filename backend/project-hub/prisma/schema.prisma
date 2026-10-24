@@ -109,3 +109,24 @@ model Attachment {
 
   @@index([taskId])
 }
+
+model NavEvent {
+  id         String   @id @default(uuid())
+  sessionId  String
+  userHash   String
+  tenantHash String
+  role       Role
+  variant    String   @default("control")
+  type       String
+  fromRoute  String?
+  toRoute    String?
+  entityType String?
+  entityHash String?
+  dwellMs    Int?
+  latencyMs  Int?
+  clientTs   DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([sessionId, clientTs])
+  @@index([tenantHash, createdAt])
+}
