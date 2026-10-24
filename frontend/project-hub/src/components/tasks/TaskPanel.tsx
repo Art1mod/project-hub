@@ -33,6 +33,7 @@ export function TaskPanel({ task, projectId, onUpdate, onClose }: TaskPanelProps
         mutationFn: () => deleteTask(task.id),
         onSuccess: async () => {
             await queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+            queryClient.invalidateQueries({ queryKey: ["analytics"] });
             onClose();
         },
     });

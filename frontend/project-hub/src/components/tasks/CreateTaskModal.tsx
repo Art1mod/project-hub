@@ -32,6 +32,7 @@ export function CreateTaskModal({ projectId, isOpen, onClose }: CreateTaskModalP
         mutationFn: () =>  createTask({ projectId, data: { title, description, status, priority, assigneeId } }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+            queryClient.invalidateQueries({ queryKey: ["analytics"] });
             resetForm();
             onClose();
         },

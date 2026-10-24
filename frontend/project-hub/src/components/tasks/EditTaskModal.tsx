@@ -37,6 +37,7 @@ function EditTaskForm({ task, projectId, onClose }: { task: Task; projectId: str
             }),
         onSuccess: async () => {
             await queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+            queryClient.invalidateQueries({ queryKey: ["analytics"] });
             onClose();
         },
     });
@@ -45,6 +46,7 @@ function EditTaskForm({ task, projectId, onClose }: { task: Task; projectId: str
         mutationFn: () => deleteTask(task.id),
         onSuccess: async () => {
             await queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
+            queryClient.invalidateQueries({ queryKey: ["analytics"] });
             onClose();
         },
     });
