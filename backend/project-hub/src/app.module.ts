@@ -11,13 +11,23 @@ import { InvitationsModule } from './invitations/invitations.module';
 import { StorageModule } from './storage/storage.module';
 import { AttachmentsModule } from './attachments/attachments.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { ThrottlerModule } from '@nestjs/throttler';
 import { TelemetryModule } from './telemetry/telemetry.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     AuthModule, 
-    PrismaModule, OrganizationsModule, ProjectsModule, TasksModule, InvitationsModule, StorageModule, AttachmentsModule, AnalyticsModule, TelemetryModule,
+    PrismaModule, 
+    OrganizationsModule, 
+    ProjectsModule, 
+    TasksModule, 
+    InvitationsModule, 
+    StorageModule, 
+    AttachmentsModule, 
+    AnalyticsModule, 
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
+    TelemetryModule,
   ],
   controllers: [AppController],
   providers: [AppService],
