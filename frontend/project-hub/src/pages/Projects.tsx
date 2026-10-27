@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useOrganization } from "../contexts/OrganizationContext";
 import { Can } from "../components/Can";
 import { sortProjects } from "../constants/projects";
+import { hoverIntent } from "../telemetry/hover";
 
 export function Projects () {
     const {activeOrgId} = useOrganization();
@@ -88,7 +89,8 @@ export function Projects () {
                         {projects?.map((project: any) => (
                             <tr 
                                 key={project.id}
-                                onClick={() => handleRowClick(project.id)} 
+                                onClick={() => handleRowClick(project.id)}
+                                {...hoverIntent(`/projects/${project.id}`, { entityType: 'project', entityId: project.id })} 
                                 className="text-zinc-50 border-b border-white/5 last:border-0 hover:bg-zinc-800/50 transition-colors cursor-pointer"
                             >
                                 <td className="px-4 py-3">{project.name}</td>
