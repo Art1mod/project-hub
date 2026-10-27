@@ -13,6 +13,7 @@ import { TaskPanel } from "../components/tasks/TaskPanel";
 import { Pagination } from "../components/Pagination";
 import { useTrackEntityOpen } from "../telemetry/useTrackEntityOpen";
 import { track } from "../telemetry/tracker";
+import { usePageReady } from "../telemetry/usePageReady";
 
 const TASKS_PER_PAGE = 10; 
 
@@ -70,6 +71,7 @@ export function ProjectDetails() {
         placeholderData: keepPreviousData,
     });
 
+    usePageReady('/projects/:id', ['project', projectId], !!project && !!tasksPage);
     const tasks = tasksPage?.data ?? [];
     const meta = tasksPage?.meta;
 
