@@ -73,13 +73,13 @@ export class TelemetryService {
         if (e.toRoute && !toRoute) return null;
         if (e.fromRoute && !fromRoute) return null;
 
-        if ((e.type === 'route_change' || e.type === 'link_hover') && !toRoute) return null;
+        if ((e.type === 'route_change' || e.type === 'link_hover' || e.type === 'page_ready') && !toRoute) return null;
 
         // entityType and entityId only make sense together
         if (Boolean(e.entityType) !== Boolean(e.entityId)) return null;
         if (e.type === 'entity_open' && !e.entityType) return null;
-
         if (e.type === 'page_change' && !e.page) return null;
+        if (e.type === 'page_ready' && e.latencyMs === undefined) return null;
 
         return {
             sessionId: ctx.sessionId,
@@ -96,6 +96,8 @@ export class TelemetryService {
             latencyMs: e.latencyMs ?? null,
             clientTs: new Date(ts),
             page: e.page ?? null,
+            bytes: e.bytes ?? null,
+            cacheState: e.cacheState ?? null,
         };
     }
 }
