@@ -6,6 +6,7 @@ import { useOrganization } from "../contexts/OrganizationContext";
 import { Can } from "../components/Can";
 import { sortProjects } from "../constants/projects";
 import { hoverIntent } from "../telemetry/hover";
+import { usePageReady } from "../telemetry/usePageReady";
 
 export function Projects () {
     const {activeOrgId} = useOrganization();
@@ -21,6 +22,8 @@ export function Projects () {
         enabled: !!activeOrgId,
         select: sortProjects  
     });
+
+    usePageReady('/projects', ['projects', activeOrgId], !!projects);
 
     const createProjectMutation = useMutation({
         mutationFn: () => createProject(activeOrgId!, {name, description}),
