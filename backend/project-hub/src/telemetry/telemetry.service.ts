@@ -79,6 +79,8 @@ export class TelemetryService {
         if (Boolean(e.entityType) !== Boolean(e.entityId)) return null;
         if (e.type === 'entity_open' && !e.entityType) return null;
 
+        if (e.type === 'page_change' && !e.page) return null;
+
         return {
             sessionId: ctx.sessionId,
             userHash: ctx.userHash,
@@ -93,6 +95,7 @@ export class TelemetryService {
             dwellMs: e.dwellMs ?? null,
             latencyMs: e.latencyMs ?? null,
             clientTs: new Date(ts),
+            page: e.page ?? null,
         };
     }
 }
