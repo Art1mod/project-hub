@@ -11,6 +11,8 @@ import { CreateTaskModal } from "../components/tasks/CreateTaskModal";
 import { TaskTable } from "../components/tasks/TaskTable";
 import { TaskPanel } from "../components/tasks/TaskPanel";
 import { Pagination } from "../components/Pagination";
+import { useTrackEntityOpen } from "../telemetry/useTrackEntityOpen";
+import { track } from "../telemetry/tracker";
 
 const TASKS_PER_PAGE = 10; 
 
@@ -31,6 +33,8 @@ export function ProjectDetails() {
 
     const { can } = usePermissions();
     const canManage = can("project:manage");
+
+    useTrackEntityOpen('project', projectId);
 
     useEffect(() => {
         if (!initialOrgId.current && activeOrgId) {
@@ -79,7 +83,13 @@ export function ProjectDetails() {
             return next;
         }, { replace: true });
 
-    const selectTask = (task: Task) => updateParams((p) => p.set("task", task.id));
+    const selectTask = (task: Task) => {
+        if (task.id !== selectedTask?.id) {
+            track({ type: 'entity_open', entityType: 'task', entityId: task.id });
+        }
+        updateParams((p) => p.set("task", task.id));
+    };
+
     const closePanel = () => updateParams((p) => p.delete("task"));
     const goToPage = (n: number) =>
         updateParams((p) => {
