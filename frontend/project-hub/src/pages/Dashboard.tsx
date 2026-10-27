@@ -6,6 +6,7 @@ import { useOrganization } from "../contexts/OrganizationContext";
 import { sortProjects } from "../constants/projects";
 import { STATUS_OPTIONS } from "../constants/tasks";
 import { STATUS_COLORS, WorkloadDonut } from "../components/dashboard/WorkloadDonut";
+import { hoverIntent } from "../telemetry/hover";
 
 export function Dashboard() {
     const { activeOrgId } = useOrganization();
@@ -35,6 +36,10 @@ export function Dashboard() {
     const destination = projectId ? `/projects/${projectId}` : "/projects";
     const destinationLabel = projectId ? "View tasks" : "View all projects";
     const goToDestination = () => navigate(destination);
+    const hover = hoverIntent(
+        destination,
+        projectId ? { entityType: 'project', entityId: projectId } : undefined,
+    );
 
     const total = metrics ? metrics.TODO + metrics.IN_PROGRESS + metrics.DONE : 0;
     const open = metrics ? metrics.TODO + metrics.IN_PROGRESS : 0;
@@ -73,6 +78,7 @@ export function Dashboard() {
                     <button
                         type="button"
                         onClick={goToDestination}
+                         {...hover}
                         className="mt-4 rounded-md bg-violet-600 px-5 py-2 text-sm text-white transition-colors hover:bg-violet-500"
                     >
                         {destinationLabel}
@@ -86,6 +92,7 @@ export function Dashboard() {
                         <button
                             type="button"
                             onClick={goToDestination}
+                             {...hover}
                             className="group flex flex-col items-center gap-4 rounded-xl border border-white/10 bg-zinc-900 p-6 text-left transition-colors hover:border-violet-500/50"
                         >
                             <WorkloadDonut metrics={metrics} />
@@ -100,6 +107,7 @@ export function Dashboard() {
                                     key={option.value}
                                     type="button"
                                     onClick={goToDestination}
+                                     {...hover}
                                     className="rounded-xl border border-white/10 bg-zinc-900 p-5 text-left transition-colors hover:border-violet-500/50"
                                 >
                                     <div className="flex items-center gap-2">
