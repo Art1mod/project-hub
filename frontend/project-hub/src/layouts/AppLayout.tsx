@@ -6,6 +6,9 @@ import { createOrganization, type Organization } from '../api/organizations';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { Can } from '../components/Can';
+import { hoverIntent } from '../telemetry/hover';
+import { endTelemetrySession } from '../telemetry/tracker';
+import { useNavigationTracking } from '../telemetry/useNavigationTracking';
 
 export function AppLayout() {
     const token = localStorage.getItem('token');
@@ -16,6 +19,7 @@ export function AppLayout() {
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
     const [isCreateOrgModalOpen, setIsCreateOrgModalOpen] = useState(false);
     const [name, setName] = useState("");
+    useNavigationTracking();
 
     const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -51,6 +55,7 @@ export function AppLayout() {
     }
 
     const handleLogout = () => {
+        endTelemetrySession(); // before the token is removed
         localStorage.removeItem('token');
         navigate('/login');
     };
@@ -104,18 +109,18 @@ export function AppLayout() {
                 </div>
 
                 <nav className="flex flex-col gap-1 flex-1">
-                    <NavLink to="/dashboard" className={navLinkClass}>Dashboard</NavLink>
-                    <NavLink to="/projects" className={navLinkClass}>Projects</NavLink>
-                    <NavLink to="/members" className={navLinkClass}>Members</NavLink>
+                    <NavLink to="/dashboard" className={navLinkClass} {...hoverIntent('/dashboard')}>Dashboard</NavLink>
+                    <NavLink to="/projects" className={navLinkClass} {...hoverIntent('/projects')}>Projects</NavLink>
+                    <NavLink to="/members" className={navLinkClass} {...hoverIntent('/members')}>Members</NavLink>
                     <Can permission="invitation:view">
-                        <NavLink to="/invitations" className={navLinkClass}>Invitations</NavLink>
+                        <NavLink to="/invitations" className={navLinkClass} {...hoverIntent('/invitations')}>Invitations</NavLink>
                     </Can>
-                    <NavLink to="/settings" className={navLinkClass}>Settings</NavLink>
+                    <NavLink to="/settings" className={navLinkClass} {...hoverIntent('/settings')}>Settings</NavLink>
                 </nav>
 
                 {/* Profile / Logout area at the bottom */}
                 <div className="flex flex-col gap-1 mt-auto pt-4 border-t border-white/10">
-                     <NavLink to="/profile" className={navLinkClass}>Profile</NavLink>
+                     <NavLink to="/profile" className={navLinkClass} {...hoverIntent('/profile')}>Profile</NavLink>
                      <button
                         onClick={() => setIsLogoutModalOpen(true)}
                         className="w-full text-left block px-3 py-2 rounded-md transition-colors text-zinc-400 hover:text-red-400 hover:bg-red-500/10"
