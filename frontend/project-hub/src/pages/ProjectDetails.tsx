@@ -91,11 +91,15 @@ export function ProjectDetails() {
     };
 
     const closePanel = () => updateParams((p) => p.delete("task"));
-    const goToPage = (n: number) =>
-        updateParams((p) => {
-            p.set("page", String(n));
-            p.delete("task"); // the selected task isn't on the new page
+    
+    const goToPage = (n: number) => {
+        track({ type: 'page_change', page: n, entityType: 'project', entityId: projectId });
+            updateParams((p) => {
+                p.set("page", String(n)); 
+                p.delete("task"); // the selected task isn't on the new page
         });
+    };
+
 
     // If the current page no longer exists (e.g. the last task on it was deleted), step back
     useEffect(() => {
