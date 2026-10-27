@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { Role } from "../api/organizations";
 import { usePermissions } from "../hooks/usePermissions";
 import { ConfirmModal } from "../components/ConfirmModal";
+import { usePageReady } from "../telemetry/usePageReady";
 
 export function Invitations () {
     const { activeOrgId } = useOrganization();
@@ -32,7 +33,9 @@ export function Invitations () {
             queryKey: ['invitations', activeOrgId],
             queryFn: () => getPendingInvitations(activeOrgId!),
             enabled: !!activeOrgId
-        });
+    });
+
+    usePageReady('/invitations', ['invitations', activeOrgId], !!invitations);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
