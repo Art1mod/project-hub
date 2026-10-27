@@ -15,11 +15,9 @@ import {
 } from 'class-validator';
 
 export const TELEMETRY_EVENT_TYPES = [
-    'route_change',
-    'link_hover',
-    'entity_open',
-    'prefetch_issued', 
-    'prefetch_used',  
+    'route_change', 'link_hover', 'entity_open',
+    'page_change',
+    'prefetch_issued', 'prefetch_used',  
 ] as const;
 
 export const TELEMETRY_VARIANTS = ['control', 'prefetch'] as const;
@@ -51,6 +49,9 @@ export class TelemetryEventDto {
 
     @IsISO8601()
     readonly clientTs: string;
+
+    @IsOptional() @IsInt() @Min(1) @Max(10000)
+    readonly page?: number;
 }
 
 export class CreateTelemetryBatchDto {
