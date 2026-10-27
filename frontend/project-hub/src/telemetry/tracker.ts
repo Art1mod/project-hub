@@ -2,12 +2,9 @@ import { API_URL } from '../lib/config';
 import { VARIANT } from './config';
 
 export type TelemetryEventType =
-    | 'route_change'
-    | 'link_hover'
-    | 'entity_open'
-    | 'page_change'
-    | 'prefetch_issued'
-    | 'prefetch_used';
+    | 'route_change' | 'link_hover' | 'entity_open' | 'page_change'
+    | 'page_ready' | 'session_start' | 'session_end'
+    | 'prefetch_issued' | 'prefetch_used';
 
 export interface TelemetryEvent {
     type: TelemetryEventType;
@@ -19,6 +16,8 @@ export interface TelemetryEvent {
     latencyMs?: number;
     clientTs: string;
     page?: number;
+    bytes?: number;
+    cacheState?: 'hit' | 'stale' | 'miss';
 }
 
 export interface TelemetryBatch {
@@ -75,6 +74,30 @@ function getSessionId(): string {
     }
 }
 
+const STARTED_KEY = 'telemetry-session-started';
+let memoryStarted = false;
+
+/** True only for the first call of a session. */
+function markSessionStarted(): boolean {
+    try {
+        if (sessionStorage.getItem(STARTED_KEY)) return false;
+        sessionStorage.setItem(STARTED_KEY, '1');
+        return true;
+    } catch {
+        if (memoryStarted) return false;
+        memoryStarted = true;
+        return true;
+    }
+}
+
+function hasSessionStarted(): boolean {
+    try {
+        return !!sessionStorage.getItem(STARTED_KEY);
+    } catch {
+        return memoryStarted;
+    }
+}
+
 interface Queued {
     orgId: string;
     event: TelemetryEvent;
@@ -107,11 +130,12 @@ class Tracker {
         if (!this.orgId || !localStorage.getItem('token')) return;
         this.start();
 
-        this.queue.push({
-            orgId: this.orgId,
-            event: { ...event, clientTs: new Date().toISOString() },
-        });
+        if (markSessionStarted()) this.enqueue(this.orgId, { type: 'session_start' });
+        this.enqueue(this.orgId, event);
+    }
 
+    private enqueue(orgId: string, event: Omit<TelemetryEvent, 'clientTs'>) {
+        this.queue.push({ orgId, event: { ...event, clientTs: new Date().toISOString() } });
         if (this.queue.length > MAX_QUEUE) this.queue.splice(0, this.queue.length - MAX_QUEUE);
         if (this.queue.length >= FLUSH_AT) this.flush(false);
     }
@@ -142,13 +166,16 @@ class Tracker {
 
     /** Called on logout: send what is left, then forget the session. */
     endSession() {
+        if (this.orgId && hasSessionStarted()) this.enqueue(this.orgId, { type: 'session_end' });
         this.flush(true);
         try {
             sessionStorage.removeItem(SESSION_KEY);
+            sessionStorage.removeItem(STARTED_KEY);
         } catch {
             // ignore
         }
         memorySessionId = null;
+        memoryStarted = false;
         this.orgId = null;
         this.currentRoute = null;
     }
