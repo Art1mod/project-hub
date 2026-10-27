@@ -127,6 +127,8 @@ model NavEvent {
   clientTs   DateTime
   createdAt  DateTime @default(now())
   page Int?
+  bytes      Int?
+  cacheState String?
 
   @@index([sessionId, clientTs])
   @@index([tenantHash, createdAt])
