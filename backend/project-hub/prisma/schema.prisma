@@ -126,6 +126,7 @@ model NavEvent {
   latencyMs  Int?
   clientTs   DateTime
   createdAt  DateTime @default(now())
+  page Int?
 
   @@index([sessionId, clientTs])
   @@index([tenantHash, createdAt])
