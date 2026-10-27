@@ -7,6 +7,7 @@ import { sortProjects } from "../constants/projects";
 import { STATUS_OPTIONS } from "../constants/tasks";
 import { STATUS_COLORS, WorkloadDonut } from "../components/dashboard/WorkloadDonut";
 import { hoverIntent } from "../telemetry/hover";
+import { usePageReady } from "../telemetry/usePageReady";
 
 export function Dashboard() {
     const { activeOrgId } = useOrganization();
@@ -29,6 +30,8 @@ export function Dashboard() {
         queryFn: () => getWorkload(activeOrgId!, projectId),
         enabled: !!activeOrgId,
     });
+
+    usePageReady('/dashboard', ['analytics', 'workload', activeOrgId, projectId ?? 'all'], !!metrics);
 
     const selectProject = (id: string) =>
         setSearchParams(id ? { project: id } : {}, { replace: true });
