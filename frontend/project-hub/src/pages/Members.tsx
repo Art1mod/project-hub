@@ -4,6 +4,7 @@ import { getMembers, removeMember, type Member } from "../api/members";
 import { usePermissions } from "../hooks/usePermissions";
 import { useState } from "react";
 import { ConfirmModal } from "../components/ConfirmModal";
+import { usePageReady } from "../telemetry/usePageReady";
 
 export function Members() {
     const { activeOrgId } = useOrganization();
@@ -16,6 +17,8 @@ export function Members() {
         queryFn: () => getMembers(activeOrgId!),
         enabled: !!activeOrgId
     }); 
+
+    usePageReady('/members', ['members', activeOrgId], !!members);
 
     const removeMutation = useMutation({
         mutationFn: (member: Member) => removeMember(activeOrgId!, member.user.id),
