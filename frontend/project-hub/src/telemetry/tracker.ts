@@ -5,6 +5,7 @@ export type TelemetryEventType =
     | 'route_change'
     | 'link_hover'
     | 'entity_open'
+    | 'page_change'
     | 'prefetch_issued'
     | 'prefetch_used';
 
@@ -17,6 +18,7 @@ export interface TelemetryEvent {
     dwellMs?: number;
     latencyMs?: number;
     clientTs: string;
+    page?: number;
 }
 
 export interface TelemetryBatch {
