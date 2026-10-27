@@ -15,13 +15,14 @@ import {
 } from 'class-validator';
 
 export const TELEMETRY_EVENT_TYPES = [
-    'route_change', 'link_hover', 'entity_open',
-    'page_change',
+    'route_change', 'link_hover', 'entity_open', 'page_change',
+    'page_ready', 'session_start', 'session_end',
     'prefetch_issued', 'prefetch_used',  
 ] as const;
 
 export const TELEMETRY_VARIANTS = ['control', 'prefetch'] as const;
 export const TELEMETRY_ENTITY_TYPES = ['project', 'task'] as const;
+export const TELEMETRY_CACHE_STATES = ['hit', 'stale', 'miss'] as const;
 
 export const MAX_EVENTS_PER_BATCH = 50;
 
@@ -52,6 +53,12 @@ export class TelemetryEventDto {
 
     @IsOptional() @IsInt() @Min(1) @Max(10000)
     readonly page?: number;
+    
+    @IsOptional() @IsIn(TELEMETRY_CACHE_STATES)
+    readonly cacheState?: (typeof TELEMETRY_CACHE_STATES)[number];
+
+    @IsOptional() @IsInt() @Min(0) @Max(100_000_000)
+    readonly bytes?: number;
 }
 
 export class CreateTelemetryBatchDto {
