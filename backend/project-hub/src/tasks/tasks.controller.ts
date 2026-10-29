@@ -6,6 +6,7 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 import { GetTasksFilterDto } from './dto/get-tasks-filter.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt_auth.guard';
 import { UseGuards } from '@nestjs/common';
+import { BulkCreateTasksDto } from './dto/bulk-create-tasks.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller()
@@ -45,5 +46,14 @@ export class TasksController {
       @Query() query: GetTasksFilterDto
     ) {
       return this.tasksService.getTasksByProjectId(user.userId, projectId, query);
+    }
+
+    @Post('projects/:projectId/tasks/bulk')
+    bulkCreateTasks(
+        @CurrentUser() user: { userId: string },
+        @Param('projectId') projectId: string,
+        @Body() body: BulkCreateTasksDto,
+    ) {
+        return this.tasksService.bulkCreateTasks(user.userId, projectId, body.tasks);
     }
 }
