@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { ProjectsService } from '../projects/projects.service';
@@ -137,5 +137,50 @@ export class TasksService {
 
         const totalPages = Math.ceil(total / limit);
         return { data: tasks, meta: { total, page, limit, totalPages } };
+    }
+
+    async bulkCreateTasks(userId: string, projectId: string, tasks: CreateTaskDto[]) {
+        const project = await this.prisma.project.findUnique({
+            where: { id: projectId },
+            select: { organizationId: true },
+        });
+        if (!project) throw new NotFoundException('Project not found or access denied');
+
+        const membership = await this.prisma.membership.findFirst({
+            where: { userId, organizationId: project.organizationId },
+            select: { role: true },
+        });
+        if (!membership) throw new NotFoundException('Project not found or access denied');
+        if (membership.role === 'MEMBER') {
+            throw new ForbiddenException('Only owners and admins can import tasks');
+        }
+
+        await this.assertAssigneesInOrg(project.organizationId, tasks);
+        
+        const result = await this.prisma.task.createMany({
+            data: tasks.map((t) => ({
+                projectId,
+                title: t.title,
+                description: t.description ?? null,
+                status: t.status ?? 'TODO',
+                priority: t.priority ?? 'MEDIUM',
+                assigneeId: t.assigneeId ?? null,
+            })),
+        });
+
+        return { created: result.count };
+    }
+
+    // One query validates every assignee
+    private async assertAssigneesInOrg(orgId: string, tasks: { assigneeId?: string | null }[]) {
+        const ids = [...new Set(tasks.map((t) => t.assigneeId).filter(Boolean))] as string[];
+        if (ids.length === 0) return;
+
+        const count = await this.prisma.membership.count({
+            where: { organizationId: orgId, userId: { in: ids } },
+        });
+        if (count !== ids.length) {
+            throw new BadRequestException('Every assignee must be a member of the organization');
+        }
     }
 }
