@@ -6,6 +6,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { UpdateProjectDto } from './dto/update-project.dto';
+import { BulkCreateProjectsDto } from './dto/bulk-create-projects.dto';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller()
@@ -53,6 +54,16 @@ export class ProjectsController {
     @CurrentUser() user: {userId: string}  
   ) {
     return this.projectsService.updateProjectById(user.userId, projectId, body);
+  }
+
+  @Post('organizations/:orgId/projects/bulk')
+  @Roles('OWNER', 'ADMIN')
+  bulkCreateProjects(
+      @Param('orgId') orgId: string,
+      @Body() body: BulkCreateProjectsDto,
+      @CurrentUser() user: { userId: string },
+  ) {
+      return this.projectsService.bulkCreateProjects(user.userId, orgId, body.projects);
   }
 
 }
