@@ -4,6 +4,7 @@ import { CreateOrganizationDto } from './dto/create-organization.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt_auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UpdateOrganizationDto } from './dto/update-organization.dto';
+import { BulkCreateOrganizationsDto } from './dto/bulk-create-organizations.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('organizations')
@@ -60,6 +61,14 @@ export class OrganizationsController {
     @CurrentUser() user: { userId: string },
   ) {
     return this.organizationsService.removeUserFromOrganization(user.userId, orgId, memberId);   
+  }
+
+  @Post('bulk')
+  bulkCreateOrganizations(
+    @Body() body: BulkCreateOrganizationsDto,
+    @CurrentUser() user: { userId: string },
+  ) {
+    return this.organizationsService.bulkCreateOrganizations(user.userId, body.organizations);
   }
 
 }
