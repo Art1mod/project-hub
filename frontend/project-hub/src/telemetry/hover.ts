@@ -9,6 +9,7 @@ const lastSent = new Map<string, number>();
 interface Entity {
     entityType: 'project' | 'task';
     entityId: string;
+    page?: number;
 }
 
 /** Spread onto a link or row: <NavLink {...hoverIntent('/projects')} /> */
