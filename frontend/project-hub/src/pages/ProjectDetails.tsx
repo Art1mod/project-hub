@@ -115,6 +115,7 @@ export function ProjectDetails() {
             updateTask({ taskId, data }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+            queryClient.invalidateQueries({ queryKey: ["analytics"] });
         }
     });
 
@@ -136,6 +137,7 @@ export function ProjectDetails() {
             queryClient.removeQueries({ queryKey: ['project', projectId] });
             queryClient.removeQueries({ queryKey: ['tasks', projectId] });
             queryClient.invalidateQueries({ queryKey: ['projects'] });
+            queryClient.invalidateQueries({ queryKey: ["analytics"] });
         },
     });
 
