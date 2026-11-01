@@ -3,6 +3,8 @@ import { api } from '../lib/api';
 export type Status = 'TODO' | 'IN_PROGRESS' | 'DONE';
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
+export const TASKS_PER_PAGE = 10;
+
 export interface Assignee {
   id: string;
   email: string;
