@@ -16,4 +16,13 @@ export class AnalyticsController {
   ) {
     return this.analyticsService.getWorkloadMetrics(user.userId, orgId, projectId);
   }
+
+  @Get('organizations/:orgId/analytics/attention')
+  getAttentionTasks(
+      @CurrentUser() user: { userId: string },
+      @Param('orgIsd') orgId: string,
+      @Query('projectId') projectId?: string,
+  ) {
+      return this.analyticsService.getAttentionTasks(user.userId, orgId, projectId);
+  }
 }
