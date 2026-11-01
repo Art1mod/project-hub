@@ -1,13 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { getProjects } from "../api/projects";
-import { getWorkload } from "../api/analytics";
+import { getAttention, getWorkload } from "../api/analytics";
 import { useOrganization } from "../contexts/OrganizationContext";
 import { sortProjects } from "../constants/projects";
 import { STATUS_OPTIONS } from "../constants/tasks";
 import { STATUS_COLORS, WorkloadDonut } from "../components/dashboard/WorkloadDonut";
 import { hoverIntent } from "../telemetry/hover";
 import { usePageReady } from "../telemetry/usePageReady";
+import { TASKS_PER_PAGE, type Status } from "../api/tasks";
+import { AttentionList } from "../components/dashboard/AttentionList";
 
 export function Dashboard() {
     const { activeOrgId } = useOrganization();
@@ -31,7 +33,13 @@ export function Dashboard() {
         enabled: !!activeOrgId,
     });
 
-    usePageReady('/dashboard', ['analytics', 'workload', activeOrgId, projectId ?? 'all'], !!metrics);
+    const { data: attention } = useQuery({
+        queryKey: ["analytics", "attention", activeOrgId, projectId ?? "all"],
+        queryFn: () => getAttention(activeOrgId!, projectId),
+        enabled: !!activeOrgId,
+    });
+
+    usePageReady('/dashboard', ['analytics', 'workload', activeOrgId, projectId ?? 'all'], !!metrics && !!attention);
 
     const selectProject = (id: string) =>
         setSearchParams(id ? { project: id } : {}, { replace: true });
@@ -43,6 +51,17 @@ export function Dashboard() {
         destination,
         projectId ? { entityType: 'project', entityId: projectId } : undefined,
     );
+
+    const statusDestination = (status: Status) => {
+        if (!projectId || !metrics) return { to: "/projects", page: undefined };
+
+        const before =
+            status === "TODO" ? 0 : status === "IN_PROGRESS" ? metrics.TODO : metrics.TODO + metrics.IN_PROGRESS;
+        const lastPage = Math.max(1, Math.ceil(total / TASKS_PER_PAGE));
+        const page = Math.min(Math.floor(before / TASKS_PER_PAGE) + 1, lastPage);
+
+        return { to: `/projects/${projectId}?page=${page}`, page };
+    };
 
     const total = metrics ? metrics.TODO + metrics.IN_PROGRESS + metrics.DONE : 0;
     const open = metrics ? metrics.TODO + metrics.IN_PROGRESS : 0;
@@ -105,29 +124,32 @@ export function Dashboard() {
                         </button>
 
                         <div className="grid content-start gap-4 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-                            {STATUS_OPTIONS.map((option) => (
-                                <button
-                                    key={option.value}
-                                    type="button"
-                                    onClick={goToDestination}
-                                     {...hover}
-                                    className="rounded-xl border border-white/10 bg-zinc-900 p-5 text-left transition-colors hover:border-violet-500/50"
-                                >
-                                    <div className="flex items-center gap-2">
-                                        <span
-                                            className="h-2.5 w-2.5 rounded-full"
-                                            style={{ backgroundColor: STATUS_COLORS[option.value] }}
-                                        />
-                                        <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
-                                            {option.label}
-                                        </span>
-                                    </div>
-                                    <div className="mt-3 text-4xl font-bold text-zinc-50">{metrics[option.value]}</div>
-                                    <div className="mt-1 text-sm text-zinc-500">
-                                        {Math.round((metrics[option.value] / total) * 100)}% of all tasks
-                                    </div>
-                                </button>
-                            ))}
+                            {STATUS_OPTIONS.map((option) => {
+                                const { to, page } = statusDestination(option.value);
+                                return (
+                                    <button
+                                        key={option.value}
+                                        type="button"
+                                        onClick={() => navigate(to)}
+                                        {...hoverIntent(to, projectId ? { entityType: 'project', entityId: projectId, page } : undefined)}
+                                        className="rounded-xl border border-white/10 bg-zinc-900 p-5 text-left transition-colors hover:border-violet-500/50"
+                                    >
+                                        <div className="flex items-center gap-2">
+                                            <span
+                                                className="h-2.5 w-2.5 rounded-full"
+                                                style={{ backgroundColor: STATUS_COLORS[option.value] }}
+                                            />
+                                            <span className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                                                {option.label}
+                                            </span>
+                                        </div>
+                                        <div className="mt-3 text-4xl font-bold text-zinc-50">{metrics[option.value]}</div>
+                                        <div className="mt-1 text-sm text-zinc-500">
+                                            {Math.round((metrics[option.value] / total) * 100)}% of all tasks
+                                        </div>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -151,6 +173,7 @@ export function Dashboard() {
                             ))}
                         </div>
                     </div>
+                    {attention && <AttentionList tasks={attention} showProject={!projectId} />}
                 </>
             )}
         </div>
