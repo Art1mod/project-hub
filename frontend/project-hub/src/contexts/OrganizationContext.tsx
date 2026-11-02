@@ -40,8 +40,6 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
         isLoading,
     };
 
-    console.log(activeRole);
-
     return (
         <OrganizationContext.Provider value={valueToShare}>
             {children}
