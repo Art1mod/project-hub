@@ -28,11 +28,15 @@ export function AppLayout() {
     }, [isCreateOrgModalOpen]);
 
     const navLinkClass = ({ isActive }: { isActive: boolean }) =>
-        `block px-3 py-2 rounded-md transition-colors ${
-            isActive
-                ? 'bg-zinc-800 text-white'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-800/50'
-        }`;
+    `flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
+        isActive
+            ? 'bg-violet-500/10 text-violet-300 ring-1 ring-inset ring-violet-500/20'
+            : 'text-zinc-400 hover:text-white hover:bg-white/5'
+    }`;
+
+    const activeOrg = organizations?.find((o: Organization) => o.id === activeOrgId);
+    const orgInitial = (activeOrg?.name ?? '?').charAt(0).toUpperCase();
+    const userEmail = 'you@example.com'; // TODO: read the real email
     
     const closeCreateOrgModal = () => {
         setIsCreateOrgModalOpen(false);
@@ -65,50 +69,65 @@ export function AppLayout() {
         if (!name.trim()) return;
         createOrganizationMutation.mutate(name.trim());
     }
-    
-    return (
-        <div className="flex min-h-screen bg-zinc-950 text-zinc-50">
-            {/* Sidebar */}
-            <aside className="w-64 bg-zinc-950 p-4 border-r border-white/10 flex flex-col">
-                <div className="mb-6 pb-6 border-b border-white/10">
-                    <h2 className="px-3 text-2xl font-bold tracking-tight text-white mb-6">Project HUB</h2>
-                    
-                    <div className="px-3 flex flex-col gap-1.5">
-                        <div className="px-3 flex items-center justify-between mb-2"> 
-    <label className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">
-        Organization 
-    </label>
-    <button 
-        type="button"
-        title="Create new organization"
-        className="flex items-center justify-center w-5 h-5 rounded-md text-zinc-400 hover:text-zinc-50 hover:bg-zinc-800 transition-colors outline-none focus:ring-1 focus:ring-violet-500"
-        aria-label="Create new organization"
-        onClick={() => setIsCreateOrgModalOpen(true)}
-    > +
-    </button>
-</div>
-                        {isLoading ? (
-                            <div className="text-sm text-zinc-400 animate-pulse py-2">Loading...</div>        
-                        ) : (
-                            <select 
-                                value={activeOrgId || ""} 
-                                onChange={(e) => setActiveOrgId(e.target.value)}
-                                className="w-full bg-zinc-900 border border-white/10 rounded-md p-2 text-sm text-zinc-100 outline-none focus:border-violet-500 hover:border-white/20 transition-colors cursor-pointer appearance-none"
-                            >
-                                {organizations?.length === 0 && (
-                                    <option value="" disabled>No organizations</option>
-                                )}
-                                {organizations?.map((org: Organization) => (
-                                    <option key={org.id} value={org.id}>
-                                        {org.name} 
-                                    </option>
-                                ))}
-                            </select>    
-                        )}
-                    </div>
-                </div>
 
-                <nav className="flex flex-col gap-1 flex-1">
+    return (
+        <div className="flex min-h-screen bg-[#0c0c0e] text-zinc-50">
+            {/* Sidebar */}
+            <aside className="flex w-64 shrink-0 flex-col border-r border-white/10 bg-[#111114] p-4">
+                
+                <h2 className="pb-6 text-center text-2xl font-extrabold tracking-tight text-white">
+                    Project <span className="text-violet-500">HUB</span>
+                </h2>
+
+                {/* Workspace */}
+                <section className="mb-6">
+                    <span className="mb-2 block px-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+                        Workspace
+                    </span>
+
+                    <div className="rounded-lg border border-white/10 bg-white/3 p-2">
+                        {isLoading ? (
+                            <div className="animate-pulse px-2 py-2 text-sm text-zinc-400">Loading...</div>
+                        ) : (
+                            <div className="flex items-center gap-3 px-1 pb-2">
+                                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-violet-600 text-sm font-bold text-white">
+                                    {orgInitial}
+                                </div>
+                                <select
+                                    value={activeOrgId || ""}
+                                    onChange={(e) => setActiveOrgId(e.target.value)}
+                                    aria-label="Organization"
+                                    className='min-w-0 flex-1 cursor-pointer appearance-none truncate rounded-md bg-transparent py-1 text-sm font-bold text-zinc-100 outline-none'
+                                >
+                                    {organizations?.length === 0 && (
+                                        <option value="" disabled>No organizations</option>
+                                    )}
+                                    {organizations?.map((org: Organization) => (
+                                        <option key={org.id} value={org.id} className="bg-zinc-900">
+                                            {org.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <span className="text-xl text-zinc-500">▾</span>
+                            </div>
+                        )}
+
+                        <button
+                            type="button"
+                            onClick={() => setIsCreateOrgModalOpen(true)}
+                            className="flex w-full items-center gap-2 rounded-md border border-dashed border-white/15 px-3 py-1.5 text-xs text-zinc-400 transition-colors hover:border-violet-500/60 hover:bg-violet-500/10 hover:text-violet-300"
+                        >
+                            <span className="text-base leading-none">+</span>
+                            New organization
+                        </button>
+                    </div>
+                </section>
+
+                {/* Navigation */}
+                <nav className="flex flex-1 flex-col gap-1">
+                    <span className="mb-1 block px-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+                        {activeOrg?.name ?? 'Navigation'}
+                    </span>
                     <NavLink to="/dashboard" className={navLinkClass} {...hoverIntent('/dashboard')}>Dashboard</NavLink>
                     <NavLink to="/projects" className={navLinkClass} {...hoverIntent('/projects')}>Projects</NavLink>
                     <NavLink to="/members" className={navLinkClass} {...hoverIntent('/members')}>Members</NavLink>
@@ -118,21 +137,31 @@ export function AppLayout() {
                     <NavLink to="/settings" className={navLinkClass} {...hoverIntent('/settings')}>Settings</NavLink>
                 </nav>
 
-                {/* Profile / Logout area at the bottom */}
-                <div className="flex flex-col gap-1 mt-auto pt-4 border-t border-white/10">
-                     <NavLink to="/profile" className={navLinkClass} {...hoverIntent('/profile')}>Profile</NavLink>
-                     <button
+                {/* Account */}
+                <section className="mt-4 border-t border-white/10 pt-4">
+                    <span className="mb-2 block px-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+                        Account
+                    </span>
+                    <div className="mb-2 flex items-center gap-3 px-2">
+                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-700 text-xs font-semibold text-zinc-100">
+                            {userEmail.charAt(0).toUpperCase()}
+                        </div>
+                        <span className="min-w-0 flex-1 truncate text-xs text-zinc-400">{userEmail}</span>
+                    </div>
+                    <NavLink to="/profile" className={navLinkClass} {...hoverIntent('/profile')}>Profile</NavLink>
+                    <button
+                        type="button"
                         onClick={() => setIsLogoutModalOpen(true)}
-                        className="w-full text-left block px-3 py-2 rounded-md transition-colors text-zinc-400 hover:text-red-400 hover:bg-red-500/10"
-                     >
-                        Log Out
-                     </button>
-                </div>
+                        className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-zinc-400 transition-colors hover:bg-red-500/10 hover:text-red-400"
+                    >
+                        Log out
+                    </button>
+                </section>
             </aside>
-            
+
             {/* Main content area */}
-            <main className="flex-1 p-8 overflow-y-auto">
-                <div className="max-w-6xl mx-auto">
+            <main className="flex-1 overflow-y-auto p-8">
+                <div className="mx-auto max-w-6xl">
                     <Outlet />
                 </div>
             </main>
@@ -185,7 +214,7 @@ export function AppLayout() {
 
                     {createOrganizationMutation.isError && <p className="text-sm text-red-400">Could not create organization.</p>}
                 </form>
-            </Modal>            
+            </Modal>       
         </div>
     );
 }
