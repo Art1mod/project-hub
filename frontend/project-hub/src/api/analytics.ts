@@ -20,8 +20,13 @@ export interface AttentionTask {
     assignee: { id: string; email: string } | null;
 }
 
-export const getAttention = async (orgId: string, projectId?: string): Promise<AttentionTask[]> => {
-    const { data } = await api.get<AttentionTask[]>(`/organizations/${orgId}/analytics/attention`, {
+export interface AttentionResponse {
+    tasks: AttentionTask[];
+    total: number;
+}
+
+export const getAttention = async (orgId: string, projectId?: string): Promise<AttentionResponse> => {
+    const { data } = await api.get<AttentionResponse>(`/organizations/${orgId}/analytics/attention`, {
         params: projectId ? { projectId } : undefined,
     });
     return data;
