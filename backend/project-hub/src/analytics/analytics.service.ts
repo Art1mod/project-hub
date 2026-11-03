@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma, Status } from '@prisma/client';
 
@@ -47,6 +47,8 @@ export class AnalyticsService {
     } 
     
     private async assertOrgAccess(userId: string, orgId: string) {
+        if (!orgId) throw new BadRequestException('orgId is required');
+        
         const organization = await this.prisma.organization.findFirst({
             where: { id: orgId, memberships: { some: { userId } } },
             select: { id: true },
@@ -57,25 +59,31 @@ export class AnalyticsService {
     async getAttentionTasks(userId: string, orgId: string, projectId?: string) {
         await this.assertOrgAccess(userId, orgId);
 
-        const tasks = await this.prisma.task.findMany({
-            where: {
-                status: { in: ['TODO', 'IN_PROGRESS'] },
-                priority: { in: ['URGENT', 'HIGH'] },
-                project: { organizationId: orgId, id: projectId },
-            },
-            orderBy: [{ priority: 'desc' }, { status: 'asc' }, { title: 'asc' }, { id: 'asc' }],
-            take: 6,
-            select: {
-                id: true,
-                title: true,
-                status: true,
-                priority: true,
-                project: { select: { id: true, name: true } },
-                assignee: { select: { id: true, email: true } },
-            },
-        });
+       const where: Prisma.TaskWhereInput = {
+            status: { in: ['TODO', 'IN_PROGRESS'] },
+            priority: { in: ['URGENT', 'HIGH'] },
+            project: { organizationId: orgId, id: projectId },
+        };
 
-        if (tasks.length === 0) return [];
+        const [tasks, total] = await Promise.all([
+            this.prisma.task.findMany({
+                where,
+                orderBy: [{ priority: 'desc' }, { status: 'asc' }, { title: 'asc' }, { id: 'asc' }],
+                take: 6,
+                select: {
+                    id: true,
+                    title: true,
+                    status: true,
+                    priority: true,
+                    project: { select: { id: true, name: true } },
+                    assignee: { select: { id: true, email: true } },
+                },
+            }),
+            this.prisma.task.count({ where }),
+        ]);
+
+        if (tasks.length === 0) return { tasks: [], total };
+
 
         // Which page of its project's list each task is on. The window function uses the
         // same ordering as the task list (status, priority desc, title, id), so they agree.
@@ -97,6 +105,6 @@ export class AnalyticsService {
         `);
         const pageById = new Map(positions.map((p) => [p.id, p.page]));
 
-        return tasks.map((t) => ({ ...t, page: pageById.get(t.id) ?? 1 }));
-}
+        return { tasks: tasks.map((t) => ({ ...t, page: pageById.get(t.id) ?? 1 })), total };
+    }
 }
