@@ -65,7 +65,7 @@ export function Dashboard() {
 
     const total = metrics ? metrics.TODO + metrics.IN_PROGRESS + metrics.DONE : 0;
     const open = metrics ? metrics.TODO + metrics.IN_PROGRESS : 0;
-
+    
     return (
         <div className="flex flex-col gap-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
@@ -173,7 +173,14 @@ export function Dashboard() {
                             ))}
                         </div>
                     </div>
-                    {attention && <AttentionList tasks={attention} showProject={!projectId} />}
+                    {attention && (
+                        <AttentionList
+                            tasks={attention.tasks}
+                            total={attention.total}
+                            projectId={projectId}
+                            showProject={!projectId}
+                        />
+                    )}
                 </>
             )}
         </div>
