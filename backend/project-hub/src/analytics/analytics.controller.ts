@@ -20,7 +20,7 @@ export class AnalyticsController {
   @Get('organizations/:orgId/analytics/attention')
   getAttentionTasks(
       @CurrentUser() user: { userId: string },
-      @Param('orgIsd') orgId: string,
+      @Param('orgId') orgId: string,
       @Query('projectId') projectId?: string,
   ) {
       return this.analyticsService.getAttentionTasks(user.userId, orgId, projectId);
