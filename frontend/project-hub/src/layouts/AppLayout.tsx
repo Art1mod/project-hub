@@ -97,7 +97,7 @@ export function AppLayout() {
                                     value={activeOrgId || ""}
                                     onChange={(e) => setActiveOrgId(e.target.value)}
                                     aria-label="Organization"
-                                    className='min-w-0 flex-1 cursor-pointer appearance-none truncate rounded-md bg-transparent py-1 text-sm font-bold text-zinc-100 outline-none'
+                                    className='min-w-0 flex-1 cursor-pointer truncate rounded-md bg-transparent py-1 text-sm font-bold text-zinc-100 outline-none'
                                 >
                                     {organizations?.length === 0 && (
                                         <option value="" disabled>No organizations</option>
@@ -108,7 +108,6 @@ export function AppLayout() {
                                         </option>
                                     ))}
                                 </select>
-                                <span className="text-xl text-zinc-500">▾</span>
                             </div>
                         )}
 
