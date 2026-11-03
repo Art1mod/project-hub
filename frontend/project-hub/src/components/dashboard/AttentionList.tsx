@@ -3,6 +3,7 @@ import type { AttentionTask } from "../../api/analytics";
 import { hoverIntent } from "../../telemetry/hover";
 import { PRIORITY_OPTIONS, STATUS_OPTIONS } from "../../constants/tasks";
 
+
 const PRIORITY_BADGE: Record<string, string> = {
     URGENT: "bg-red-500/15 text-red-400",
     HIGH: "bg-orange-500/15 text-orange-400",
@@ -41,7 +42,18 @@ function AttentionRow({ task, showProject }: { task: AttentionTask; showProject:
     );
 }
 
-export function AttentionList({ tasks, showProject }: { tasks: AttentionTask[]; showProject: boolean }) {
+interface AttentionListProps {
+    tasks: AttentionTask[];
+    total: number;
+    projectId?: string;
+    showProject: boolean;
+}
+
+export function AttentionList({ tasks, total, projectId, showProject }: AttentionListProps) {
+    const navigate = useNavigate();
+    const remaining = total - tasks.length;
+    const moreTo = projectId ? `/projects/${projectId}` : "/projects";
+
     return (
         <div className="rounded-xl border border-white/10 bg-zinc-900 p-5">
             <div className="mb-3 flex items-center justify-between">
@@ -57,6 +69,17 @@ export function AttentionList({ tasks, showProject }: { tasks: AttentionTask[]; 
                         <AttentionRow key={task.id} task={task} showProject={showProject} />
                     ))}
                 </ul>
+            )}
+
+            {remaining > 0 && (
+                <button
+                    type="button"
+                    onClick={() => navigate(moreTo)}
+                    {...hoverIntent(moreTo, projectId ? { entityType: "project", entityId: projectId } : undefined)}
+                    className="mt-2 w-full rounded-md px-3 py-2 text-left text-sm text-zinc-400 transition-colors hover:bg-zinc-800/60 hover:text-violet-400"
+                >
+                    +{remaining} more urgent or high {remaining === 1 ? "task" : "tasks"} →
+                </button>
             )}
         </div>
     );
