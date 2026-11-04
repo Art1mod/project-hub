@@ -8,6 +8,7 @@ import {
     formatBytes,
 } from "../../constants/attachments";
 import { ConfirmModal } from "../ConfirmModal";
+import { track } from "../../telemetry/tracker";
 
 const labelClass = "text-xs font-semibold uppercase tracking-wider text-zinc-500";
 
@@ -51,7 +52,16 @@ export function TaskAttachments({ taskId }: { taskId: string }) {
 
                 try {
                     setProgress({ name: file.name, percent: 0 });
+                    const startedAt = performance.now();
                     await uploadAttachment(taskId, file, (percent) => setProgress({ name: file.name, percent }));
+                    track({
+                        type: 'action',
+                        action: 'attachment_upload',
+                        entityType: 'task',
+                        entityId: taskId,
+                        latencyMs: Math.round(performance.now() - startedAt),
+                        bytes: file.size,
+                    });
                     remaining--;
                 } catch (err) {
                     problems.push(`${file.name}: ${errorText(err, "upload failed")}`);
