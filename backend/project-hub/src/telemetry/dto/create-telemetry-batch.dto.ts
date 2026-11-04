@@ -16,8 +16,12 @@ import {
 
 export const TELEMETRY_EVENT_TYPES = [
     'route_change', 'link_hover', 'entity_open', 'page_change',
-    'page_ready', 'session_start', 'session_end',
+    'page_ready', 'session_start', 'session_end', 'action',
     'prefetch_issued', 'prefetch_used',  
+] as const;
+
+export const TELEMETRY_ACTIONS = [
+    'attachment_upload', 'attachment_delete', 'task_create', 'task_delete',
 ] as const;
 
 export const TELEMETRY_VARIANTS = ['control', 'prefetch'] as const;
@@ -59,6 +63,9 @@ export class TelemetryEventDto {
 
     @IsOptional() @IsInt() @Min(0) @Max(100_000_000)
     readonly bytes?: number;
+
+    @IsOptional() @IsIn(TELEMETRY_ACTIONS)
+    readonly action?: (typeof TELEMETRY_ACTIONS)[number];
 }
 
 export class CreateTelemetryBatchDto {
