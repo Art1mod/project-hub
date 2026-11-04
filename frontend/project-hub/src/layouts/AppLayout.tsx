@@ -9,6 +9,7 @@ import { Can } from '../components/Can';
 import { hoverIntent } from '../telemetry/hover';
 import { endTelemetrySession } from '../telemetry/tracker';
 import { useNavigationTracking } from '../telemetry/useNavigationTracking';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 
 export function AppLayout() {
     const token = localStorage.getItem('token');
@@ -36,7 +37,8 @@ export function AppLayout() {
 
     const activeOrg = organizations?.find((o: Organization) => o.id === activeOrgId);
     const orgInitial = (activeOrg?.name ?? '?').charAt(0).toUpperCase();
-    const userEmail = 'you@example.com'; // TODO: read the real email
+    const { data: currentUser } = useCurrentUser();
+    const userEmail = currentUser?.email ?? '';
     
     const closeCreateOrgModal = () => {
         setIsCreateOrgModalOpen(false);
