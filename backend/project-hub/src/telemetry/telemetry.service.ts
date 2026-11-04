@@ -35,6 +35,7 @@ export class TelemetryService {
     }
 
     async recordBatch(userId: string, dto: CreateTelemetryBatchDto) {
+        if (process.env.TELEMETRY_ENABLED === 'false') return;
         const membership = await this.prisma.membership.findFirst({
             where: { userId, organizationId: dto.orgId },
             select: { role: true },
