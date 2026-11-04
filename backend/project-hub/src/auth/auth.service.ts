@@ -50,20 +50,6 @@ export class AuthService {
        return { access_token: token, user: { id: user.id, email } };
     }
 
-    async getUserById(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-    });
-
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-    
-    const { password, ...result } = user;
-    
-    return result;
-  }
-
   async getUserInvitations(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -84,4 +70,13 @@ export class AuthService {
         }
     });
   }
+
+  async getMe(userId: string) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: { id: true, email: true }, 
+        });
+        if (!user) throw new NotFoundException('User not found');
+        return user;
+    }
 }
