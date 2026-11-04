@@ -3,7 +3,7 @@ import { VARIANT } from './config';
 
 export type TelemetryEventType =
     | 'route_change' | 'link_hover' | 'entity_open' | 'page_change'
-    | 'page_ready' | 'session_start' | 'session_end'
+    | 'page_ready' | 'session_start' | 'session_end' | 'action'
     | 'prefetch_issued' | 'prefetch_used';
 
 export interface TelemetryEvent {
@@ -18,6 +18,7 @@ export interface TelemetryEvent {
     page?: number;
     bytes?: number;
     cacheState?: 'hit' | 'stale' | 'miss';
+    action?: string;
 }
 
 export interface TelemetryBatch {
