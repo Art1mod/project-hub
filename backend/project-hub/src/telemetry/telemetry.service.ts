@@ -80,6 +80,7 @@ export class TelemetryService {
         if (e.type === 'entity_open' && !e.entityType) return null;
         if (e.type === 'page_change' && !e.page) return null;
         if (e.type === 'page_ready' && e.latencyMs === undefined) return null;
+        if (e.type === 'action' && !e.action) return null;
 
         return {
             sessionId: ctx.sessionId,
@@ -98,6 +99,7 @@ export class TelemetryService {
             page: e.page ?? null,
             bytes: e.bytes ?? null,
             cacheState: e.cacheState ?? null,
+            action: e.action ?? null,
         };
     }
 }
