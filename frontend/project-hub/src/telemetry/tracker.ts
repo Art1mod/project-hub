@@ -1,5 +1,5 @@
 import { API_URL } from '../lib/config';
-import { VARIANT } from './config';
+import { TELEMETRY_ENABLED, VARIANT } from './config';
 
 export type TelemetryEventType =
     | 'route_change' | 'link_hover' | 'entity_open' | 'page_change'
@@ -128,6 +128,7 @@ class Tracker {
     }
 
     track(event: Omit<TelemetryEvent, 'clientTs'>) {
+        if (!TELEMETRY_ENABLED) return;
         if (!this.orgId || !localStorage.getItem('token')) return;
         this.start();
 
