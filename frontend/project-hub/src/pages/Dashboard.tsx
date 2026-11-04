@@ -16,33 +16,60 @@ export function Dashboard() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
 
-    const { data: projects = [] } = useQuery({
+    const { data: projects = [], isSuccess: projectsLoaded } = useQuery({
         queryKey: ["projects", activeOrgId],
         queryFn: () => getProjects(activeOrgId!),
         enabled: !!activeOrgId,
         select: sortProjects,
     });
 
-    const requestedId = searchParams.get("project");
-    const selectedProject = projects.find((p) => p.id === requestedId) ?? null;
+    const storageKey = activeOrgId ? `dashboard-project:${activeOrgId}` : null;
+
+    const readSaved = () => {
+        try {
+            return storageKey ? localStorage.getItem(storageKey) : null;
+        } catch {
+            return null;
+        }
+    };
+
+    // URL first, then the saved choice. Ids that aren't in this org's list are ignored.
+    const fromUrl = projects.find((p) => p.id === searchParams.get("project"));
+    const fromSaved = projects.find((p) => p.id === readSaved());
+    const selectedProject = fromUrl ?? fromSaved ?? null;
     const projectId = selectedProject?.id;
+
+    const selectProject = (id: string) => {
+        try {
+            if (storageKey) {
+                if (id) localStorage.setItem(storageKey, id);
+                else localStorage.removeItem(storageKey);
+            }
+        } catch {
+            // storage unavailable: the URL still carries the choice
+        }
+        setSearchParams(id ? { project: id } : {}, { replace: true });
+    };
+
+    // Wait for the project list, so a saved project is resolved before any data is fetched
+    const ready = !!activeOrgId && projectsLoaded;
 
     const { data: metrics, isLoading, isError } = useQuery({
         queryKey: ["analytics", "workload", activeOrgId, projectId ?? "all"],
         queryFn: () => getWorkload(activeOrgId!, projectId),
-        enabled: !!activeOrgId,
+        enabled: ready,
     });
 
     const { data: attention } = useQuery({
         queryKey: ["analytics", "attention", activeOrgId, projectId ?? "all"],
         queryFn: () => getAttention(activeOrgId!, projectId),
-        enabled: !!activeOrgId,
+        enabled: ready,
     });
 
     usePageReady('/dashboard', ['analytics', 'workload', activeOrgId, projectId ?? 'all'], !!metrics && !!attention);
 
-    const selectProject = (id: string) =>
-        setSearchParams(id ? { project: id } : {}, { replace: true });
+    const total = metrics ? metrics.TODO + metrics.IN_PROGRESS + metrics.DONE : 0;
+    const open = metrics ? metrics.TODO + metrics.IN_PROGRESS : 0;
 
     const destination = projectId ? `/projects/${projectId}` : "/projects";
     const destinationLabel = projectId ? "View tasks" : "View all projects";
@@ -62,9 +89,6 @@ export function Dashboard() {
 
         return { to: `/projects/${projectId}?page=${page}`, page };
     };
-
-    const total = metrics ? metrics.TODO + metrics.IN_PROGRESS + metrics.DONE : 0;
-    const open = metrics ? metrics.TODO + metrics.IN_PROGRESS : 0;
     
     return (
         <div className="flex flex-col gap-6">
@@ -88,7 +112,7 @@ export function Dashboard() {
                 </select>
             </div>
 
-            {isLoading && <div className="text-zinc-400">Loading workload...</div>}
+            {(!ready || isLoading) && <div className="text-zinc-400">Loading workload...</div>}
             {isError && <div className="text-red-500">Error fetching workload...</div>}
 
             {metrics && total === 0 && (
