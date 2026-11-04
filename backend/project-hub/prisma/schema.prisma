@@ -129,6 +129,7 @@ model NavEvent {
   page Int?
   bytes      Int?
   cacheState String?
+  action String?
 
   @@index([sessionId, clientTs])
   @@index([tenantHash, createdAt])
