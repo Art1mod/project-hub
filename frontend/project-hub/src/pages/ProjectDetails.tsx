@@ -113,7 +113,8 @@ export function ProjectDetails() {
     const updateTaskMutation = useMutation({
         mutationFn: ({ taskId, data }: { taskId: string, data: Partial<CreateTaskProps> }) =>
             updateTask({ taskId, data }),
-        onSuccess: () => {
+        onSuccess: (updated) => {
+            track({ type: 'action', action: 'task_update', entityType: 'task', entityId: updated.id });
             queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
             queryClient.invalidateQueries({ queryKey: ["analytics"] });
         }
@@ -121,8 +122,9 @@ export function ProjectDetails() {
 
     const updateProjectMutation = useMutation({
         mutationFn: (input: UpdateProjectInput) => updateProject(projectId!, input),
-        onSuccess: async () => {
+        onSuccess: async (updated) => {
             await Promise.all([
+                track({ type: 'action', action: 'project_update', entityType: 'project', entityId: updated.id }),
                 queryClient.invalidateQueries({ queryKey: ['project', projectId] }),
                 queryClient.invalidateQueries({ queryKey: ['projects'] }),
             ]);
@@ -131,7 +133,8 @@ export function ProjectDetails() {
 
     const deleteProjectMutation = useMutation({
         mutationFn: () => deleteProject(projectId!),
-        onSuccess: () => {
+        onSuccess: (deleted) => {
+            track({ type: 'action', action: 'project_delete', entityType: 'project', entityId: deleted.id }),
             setIsDeleted(true);
             navigate('/projects');
             queryClient.removeQueries({ queryKey: ['project', projectId] });

@@ -7,6 +7,7 @@ import { Can } from "../components/Can";
 import { sortProjects } from "../constants/projects";
 import { hoverIntent } from "../telemetry/hover";
 import { usePageReady } from "../telemetry/usePageReady";
+import { track } from "../telemetry/tracker";
 
 export function Projects () {
     const {activeOrgId} = useOrganization();
@@ -27,7 +28,8 @@ export function Projects () {
 
     const createProjectMutation = useMutation({
         mutationFn: () => createProject(activeOrgId!, {name, description}),
-        onSuccess: () => {
+        onSuccess: (created) => {
+            track({ type: 'action', action: 'project_create', entityType: 'project', entityId: created.id });
             queryClient.invalidateQueries({ queryKey: ['projects', activeOrgId] });
             setName("");
             setDescription("");
