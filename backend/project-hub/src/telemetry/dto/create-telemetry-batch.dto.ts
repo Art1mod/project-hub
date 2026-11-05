@@ -21,7 +21,10 @@ export const TELEMETRY_EVENT_TYPES = [
 ] as const;
 
 export const TELEMETRY_ACTIONS = [
-    'attachment_upload', 'attachment_delete', 'task_create', 'task_delete',
+    'task_create', 'task_update', 'task_delete',
+    'project_create', 'project_update', 'project_delete',
+    'attachment_upload', 'attachment_delete',
+    'member_remove', 'invitation_create', 'invitation_cancel',
 ] as const;
 
 export const TELEMETRY_VARIANTS = ['control', 'prefetch'] as const;
