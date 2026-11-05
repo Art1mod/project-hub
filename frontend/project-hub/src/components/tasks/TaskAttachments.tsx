@@ -79,6 +79,12 @@ export function TaskAttachments({ taskId }: { taskId: string }) {
     const deleteMutation = useMutation({
         mutationFn: (id: string) => deleteAttachment(id),
         onSuccess: async () => {
+            track({
+                        type: 'action',
+                        action: 'attachment_delete',
+                        entityType: 'task',
+                        entityId: taskId,
+                    });
             await queryClient.invalidateQueries({ queryKey: ["attachments", taskId] });
             setToDelete(null);
         },

@@ -4,6 +4,7 @@ import { createTask, type Priority, type Status } from "../../api/tasks";
 import { Modal } from "../Modal";
 import { STATUS_OPTIONS, PRIORITY_OPTIONS } from "../../constants/tasks";
 import { AssigneeSelect } from "./AssigneeSelect";
+import { track } from "../../telemetry/tracker";
 
 interface CreateTaskModalProps {
     projectId: string;
@@ -30,7 +31,8 @@ export function CreateTaskModal({ projectId, isOpen, onClose }: CreateTaskModalP
 
     const createTaskMutation = useMutation({
         mutationFn: () =>  createTask({ projectId, data: { title, description, status, priority, assigneeId } }),
-        onSuccess: () => {
+        onSuccess: (created) => {
+            track({ type: 'action', action: 'task_create', entityType: 'task', entityId: created.id });
             queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
             queryClient.invalidateQueries({ queryKey: ["analytics"] });
             resetForm();

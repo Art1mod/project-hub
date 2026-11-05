@@ -7,6 +7,7 @@ import { PRIORITY_OPTIONS, STATUS_OPTIONS } from "../../constants/tasks";
 import { useResizableWidth } from "../../hooks/useResizableWidth";
 import { AssigneeSelect } from "./AssigneeSelect";
 import { TaskAttachments } from "./TaskAttachments";
+import { track } from "../../telemetry/tracker";
 
 interface TaskPanelProps {
     task: Task;
@@ -32,6 +33,7 @@ export function TaskPanel({ task, projectId, onUpdate, onClose }: TaskPanelProps
     const deleteMutation = useMutation({
         mutationFn: () => deleteTask(task.id),
         onSuccess: async () => {
+            track({ type: 'action', action: 'task_delete', entityType: 'task', entityId: task.id });
             await queryClient.invalidateQueries({ queryKey: ["tasks", projectId] });
             queryClient.invalidateQueries({ queryKey: ["analytics"] });
             onClose();
