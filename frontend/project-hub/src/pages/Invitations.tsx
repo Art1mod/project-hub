@@ -6,6 +6,7 @@ import type { Role } from "../api/organizations";
 import { usePermissions } from "../hooks/usePermissions";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { usePageReady } from "../telemetry/usePageReady";
+import { track } from "../telemetry/tracker";
 
 export function Invitations () {
     const { activeOrgId } = useOrganization();
@@ -19,7 +20,8 @@ export function Invitations () {
     const createInvitationMutation = useMutation({
         mutationFn: (data: CreateInvitationProps) => 
             createInvitation({ orgId: activeOrgId!, data }),
-        onSuccess: async () => { 
+        onSuccess: async (created) => {
+            track({ type: 'action', action: 'invitation_create', entityId: created.id }); 
             setEmail("");
             setRole("MEMBER");
             await queryClient.invalidateQueries({ queryKey: ['invitations'] });
@@ -46,6 +48,7 @@ export function Invitations () {
     const cancelMutation = useMutation({
         mutationFn: (invitationId: string) => cancelInvitation(activeOrgId!, invitationId),
         onSuccess: async () => {
+            track({ type: 'action', action: 'invitation_cancel'});
             await queryClient.invalidateQueries({ queryKey: ['invitations', activeOrgId] });
             setInvitationToCancel(null);
         },
