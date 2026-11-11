@@ -56,7 +56,7 @@ export class AnalyticsService {
         if (!organization) throw new NotFoundException('Organization not found or access denied');
     }
 
-    async getAttentionTasks(userId: string, orgId: string, projectId?: string) {
+    async getAttentionTasks(userId: string, orgId: string, projectId?: string, page = 1, take = 6) {
         await this.assertOrgAccess(userId, orgId);
 
        const where: Prisma.TaskWhereInput = {
@@ -69,7 +69,8 @@ export class AnalyticsService {
             this.prisma.task.findMany({
                 where,
                 orderBy: [{ priority: 'desc' }, { status: 'asc' }, { title: 'asc' }, { id: 'asc' }],
-                take: 6,
+                skip: (page - 1) * take,
+                take,
                 select: {
                     id: true,
                     title: true,
