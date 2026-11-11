@@ -22,7 +22,11 @@ export class AnalyticsController {
       @CurrentUser() user: { userId: string },
       @Param('orgId') orgId: string,
       @Query('projectId') projectId?: string,
+      @Query('page') page?: string,
+      @Query('limit') limit?: string,
   ) {
-      return this.analyticsService.getAttentionTasks(user.userId, orgId, projectId);
+      const take = Math.min(20, Math.max(1, Number(limit) || 6));
+      const pageNo = Math.max(1, Number(page) || 1);
+      return this.analyticsService.getAttentionTasks(user.userId, orgId, projectId, pageNo, take);
   }
 }
