@@ -12,7 +12,7 @@ const PRIORITY_BADGE: Record<string, string> = {
 const label = (options: { value: string; label: string }[], value: string) =>
     options.find((o) => o.value === value)?.label ?? value;
 
-function AttentionRow({ task, showProject }: { task: AttentionTask; showProject: boolean }) {
+export function AttentionRow({ task, showProject }: { task: AttentionTask; showProject: boolean }) {
     const navigate = useNavigate();
     const to = `/projects/${task.project.id}?page=${task.page}&task=${task.id}`;
 
@@ -45,14 +45,12 @@ function AttentionRow({ task, showProject }: { task: AttentionTask; showProject:
 interface AttentionListProps {
     tasks: AttentionTask[];
     total: number;
-    projectId?: string;
     showProject: boolean;
+    onShowAll: () => void;
 }
 
-export function AttentionList({ tasks, total, projectId, showProject }: AttentionListProps) {
-    const navigate = useNavigate();
+export function AttentionList({ tasks, total, showProject, onShowAll }: AttentionListProps) {
     const remaining = total - tasks.length;
-    const moreTo = projectId ? `/projects/${projectId}` : "/projects";
 
     return (
         <div className="rounded-xl border border-white/10 bg-zinc-900 p-5">
@@ -72,15 +70,14 @@ export function AttentionList({ tasks, total, projectId, showProject }: Attentio
             )}
 
             {remaining > 0 && (
-                <button
-                    type="button"
-                    onClick={() => navigate(moreTo)}
-                    {...hoverIntent(moreTo, projectId ? { entityType: "project", entityId: projectId } : undefined)}
-                    className="mt-2 w-full rounded-md px-3 py-2 text-left text-sm text-zinc-400 transition-colors hover:bg-zinc-800/60 hover:text-violet-400"
-                >
-                    +{remaining} more urgent or high {remaining === 1 ? "task" : "tasks"} →
-                </button>
-            )}
+            <button
+                type="button"
+                onClick={onShowAll}
+                className="mt-2 w-full rounded-md px-3 py-2 text-left text-sm text-zinc-400 transition-colors hover:bg-zinc-800/60 hover:text-violet-400"
+            >
+                Show all {total} urgent and high priority tasks →
+            </button>
+)}
         </div>
     );
 }
