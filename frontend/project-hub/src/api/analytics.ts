@@ -25,9 +25,14 @@ export interface AttentionResponse {
     total: number;
 }
 
-export const getAttention = async (orgId: string, projectId?: string): Promise<AttentionResponse> => {
+export const getAttention = async (
+    orgId: string,
+    projectId?: string,
+    page = 1,
+    limit = 6,
+): Promise<AttentionResponse> => {
     const { data } = await api.get<AttentionResponse>(`/organizations/${orgId}/analytics/attention`, {
-        params: projectId ? { projectId } : undefined,
+        params: { ...(projectId ? { projectId } : {}), page, limit },
     });
     return data;
 };
