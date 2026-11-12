@@ -10,11 +10,14 @@ import { hoverIntent } from "../telemetry/hover";
 import { usePageReady } from "../telemetry/usePageReady";
 import { TASKS_PER_PAGE, type Status } from "../api/tasks";
 import { AttentionList } from "../components/dashboard/AttentionList";
+import { useState } from "react";
+import { AttentionModal } from "../components/dashboard/AttentionModal";
 
 export function Dashboard() {
     const { activeOrgId } = useOrganization();
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
+    const [isAttentionOpen, setIsAttentionOpen] = useState(false);
 
     const { data: projects = [], isSuccess: projectsLoaded } = useQuery({
         queryKey: ["projects", activeOrgId],
@@ -201,8 +204,17 @@ export function Dashboard() {
                         <AttentionList
                             tasks={attention.tasks}
                             total={attention.total}
-                            projectId={projectId}
                             showProject={!projectId}
+                            onShowAll={() => setIsAttentionOpen(true)}
+                        />
+                    )}
+
+                    {activeOrgId && (
+                        <AttentionModal
+                            isOpen={isAttentionOpen}
+                            onClose={() => setIsAttentionOpen(false)}
+                            orgId={activeOrgId}
+                            projectId={projectId}
                         />
                     )}
                 </>
