@@ -1,5 +1,5 @@
 import { Priority, Status } from "@prisma/client";
-import { IsEnum, IsInt, IsOptional, IsString, Min, Max } from "class-validator";
+import { IsEnum, IsInt, IsOptional, IsString, Min, Max, IsIn } from "class-validator";
 import { Type } from "class-transformer";
 
 export class GetTasksFilterDto {
@@ -20,4 +20,10 @@ export class GetTasksFilterDto {
 
     @Type(() => Number) @IsInt() @Min(1) @Max(100) @IsOptional()
     readonly limit: number = 10;
+
+    @IsOptional() @IsIn(['status', 'priority'])
+    readonly sortBy?: 'status' | 'priority';
+
+    @IsOptional() @IsIn(['asc', 'desc'])
+    readonly order?: 'asc' | 'desc';
 }
