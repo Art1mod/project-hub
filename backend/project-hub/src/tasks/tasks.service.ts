@@ -6,6 +6,7 @@ import { UpdateTaskDto } from './dto/update-task.dto';
 import { NotFoundException, BadRequestException } from '@nestjs/common';
 import { GetTasksFilterDto } from './dto/get-tasks-filter.dto';
 import { StorageService } from '../storage/storage.service';
+import { Prisma } from '@prisma/client';
 
 
 @Injectable()
@@ -110,9 +111,18 @@ export class TasksService {
     async getTasksByProjectId(userId: string, projectId: string, filters: GetTasksFilterDto) {
         await this.projectsService.getProjectById(userId, projectId);
     
-        const { status, priority, assigneeId, search, page, limit } = filters;
+        const { status, priority, assigneeId, search, page, limit, order, sortBy } = filters;
         const skip = (page - 1) * limit;
         const whereObject: any = { projectId: projectId };
+        
+        const dir = order ?? 'asc';
+        const orderBy: Prisma.TaskOrderByWithRelationInput[] =
+            sortBy === 'priority'
+                ? [{ priority: dir }, { status: 'asc' }, { title: 'asc' }]
+                : sortBy === 'status'
+                ? [{ status: dir }, { priority: 'desc' }, { title: 'asc' }]
+                : [{ status: 'asc' }, { priority: 'desc' }, { title: 'asc' }]; // default
+        orderBy.push({ id: 'asc' }); 
 
         if (status) whereObject.status = status;
         if (priority) whereObject.priority = priority;
@@ -125,12 +135,7 @@ export class TasksService {
                 skip: skip,
                 take: limit,
                 include: { assignee: { select: { id: true, email: true } } },
-                orderBy: [
-                    { status: 'asc' },     
-                    { priority: 'desc' },  
-                    { title: 'asc' },
-                    { id: 'asc' },       
-                ],
+                orderBy: orderBy,
             }),
             this.prisma.task.count({ where: whereObject })
         ]);
