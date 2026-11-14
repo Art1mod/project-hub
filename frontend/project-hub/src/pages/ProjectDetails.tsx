@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { getTasks, updateTask, type CreateTaskProps, type Task } from "../api/tasks";
+import { getTasks, updateTask, type CreateTaskProps, type SortBy, type Task } from "../api/tasks";
 import { getProject, updateProject, deleteProject, type UpdateProjectInput } from "../api/projects";
 import { InlineEditable } from "../components/InlineEditable";
 import { useOrganization } from "../contexts/OrganizationContext";
@@ -62,14 +62,34 @@ export function ProjectDetails() {
     });
 
 
-   const page = Math.max(1, Number(searchParams.get("page")) || 1);
+    const page = Math.max(1, Number(searchParams.get("page")) || 1);
+
+    const rawSort = searchParams.get("sort");
+    const sortBy = rawSort === "status" || rawSort === "priority" ? rawSort : undefined;
+    const order = searchParams.get("order") === "desc" ? "desc" : "asc";
 
     const { data: tasksPage, isLoading, isError, isPlaceholderData } = useQuery({
-        queryKey: ['tasks', projectId, page],
-        queryFn: () => getTasks(projectId!, page, TASKS_PER_PAGE),
+        queryKey: ['tasks', projectId, page, sortBy ?? 'default', order],
+        queryFn: () => getTasks(projectId!, page, TASKS_PER_PAGE, sortBy ? { sortBy, order } : undefined),
         enabled: !!projectId && !isDeleted,
         placeholderData: keepPreviousData,
     });
+
+    // Click cycle: off -> asc -> desc -> off
+    const toggleSort = (column: SortBy) =>
+        updateParams((p) => {
+            if (sortBy !== column) {
+                p.set("sort", column);
+                p.set("order", "asc");
+            } else if (order === "asc") {
+                p.set("order", "desc");
+            } else {
+                p.delete("sort");
+                p.delete("order");
+            }
+            p.delete("page"); // a new ordering starts from page 1
+            p.delete("task");
+        });
 
     usePageReady('/projects/:id', ['project', projectId], !!project && !!tasksPage);
     const tasks = tasksPage?.data ?? [];
@@ -232,6 +252,9 @@ export function ProjectDetails() {
                                 onSelect={selectTask}
                                 selectedId={selectedTask?.id}
                                 isUpdating={updateTaskMutation.isPending}
+                                sortBy={sortBy}
+                                order={order}
+                                onSort={toggleSort}
                             />
                         </div>
 
