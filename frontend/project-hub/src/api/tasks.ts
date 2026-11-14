@@ -39,13 +39,17 @@ export interface Paginated<T> {
   meta: PaginationMeta;
 }
 
+export type SortBy = 'status' | 'priority';
+export type SortOrder = 'asc' | 'desc';
+
 export const getTasks = async (
     projectId: string,
     page = 1,
     limit = 10,
+    sort?: { sortBy: SortBy; order: SortOrder },
 ): Promise<Paginated<Task>> => {
     const response = await api.get<Paginated<Task>>(`/projects/${projectId}/tasks`, {
-        params: { page, limit },
+        params: { page, limit, ...(sort ?? {}) },
     });
     return response.data;
 };
