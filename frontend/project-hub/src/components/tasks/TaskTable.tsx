@@ -1,4 +1,4 @@
-import type { Priority, Status, Task, CreateTaskProps } from "../../api/tasks";
+import type { Priority, Status, Task, CreateTaskProps, SortBy, SortOrder } from "../../api/tasks";
 import { PRIORITY_OPTIONS, STATUS_OPTIONS } from "../../constants/tasks";
 
 interface TaskTableProps {
@@ -7,20 +7,45 @@ interface TaskTableProps {
     onSelect: (task: Task) => void;
     selectedId?: string | null;
     isUpdating?: boolean;
+    sortBy?: SortBy;
+    order?: SortOrder;
+    onSort: (column: SortBy) => void;
 }
+
+
 
 const selectClass =
     "bg-zinc-800 border border-transparent hover:border-white/20 focus:border-violet-500 rounded-md px-2 py-1 text-xs outline-none cursor-pointer transition-colors disabled:opacity-50";
 
-export function TaskTable({ tasks, onUpdate, onSelect, selectedId, isUpdating = false }: TaskTableProps) {
+export function TaskTable({ tasks, onUpdate, onSelect, selectedId, isUpdating = false, sortBy, order, onSort}: TaskTableProps) {
+    
+    const SortHeader = ({ column, label }: { column: SortBy; label: string }) => (
+        <th className="px-4 py-3 text-center font-medium">
+            <button
+                type="button"
+                onClick={() => onSort(column)}
+                className={`inline-flex items-center gap-1 transition-colors hover:text-white ${
+                    sortBy === column ? "text-violet-300" : ""
+                }`}
+            >
+                {label}
+                <span className="text-[10px]">
+                    {sortBy === column ? (order === "asc" ? "▲" : "▼") : "↕"}
+                </span>
+            </button>
+        </th>
+    );
+
+
+    
     return (
         <div className="bg-zinc-900 border border-white/10 rounded-xl overflow-hidden">
             <table className="w-full text-left text-sm whitespace-nowrap">
                 <thead className="text-zinc-400 border-b border-white/10 bg-zinc-950/50">
                     <tr>
                         <th className="px-4 py-3 font-medium">Title</th>
-                        <th className="px-4 py-3 font-medium text-center">Status</th>
-                        <th className="px-4 py-3 font-medium text-center">Priority</th>
+                        <SortHeader column="status" label="Status" />
+                        <SortHeader column="priority" label="Priority" />
                         <th className="px-4 py-3 font-medium">Assignee</th>
                     </tr>
                 </thead>
