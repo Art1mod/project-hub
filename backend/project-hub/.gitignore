@@ -42,6 +42,10 @@ lerna-debug.log*
 .env.production.local
 .env.local
 
+# Simulated telemetry runs and the real-session snapshot
+/sim/runs/
+/sim/ground-truth/
+
 # temp directory
 .temp
 .tmp
