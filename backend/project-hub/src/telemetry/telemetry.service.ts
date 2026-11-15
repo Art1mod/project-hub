@@ -1,20 +1,8 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
-import { Prisma, Role } from '@prisma/client';
-import { createHmac } from 'crypto';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateTelemetryBatchDto, TelemetryEventDto } from './dto/create-telemetry-batch.dto';
-import { normalizeRoute } from './route-normalizer';
-
-const MAX_AGE_MS = 24 * 60 * 60 * 1000;
-const MAX_FUTURE_MS = 5 * 60 * 1000;
-
-interface BatchContext {
-    sessionId: string;
-    variant: string;
-    userHash: string;
-    tenantHash: string;
-    role: Role;
-}
+import { CreateTelemetryBatchDto } from './dto/create-telemetry-batch.dto';
+import { buildNavEventRow, hashId, NavEventRowContext } from './nav-event-row';
 
 @Injectable()
 export class TelemetryService {
@@ -29,11 +17,6 @@ export class TelemetryService {
         this.salt = salt;
     }
 
-    // The domain prefix means the same id never produces the same hash in two roles
-    private hash(domain: string, value: string) {
-        return createHmac('sha256', this.salt).update(`${domain}:${value}`).digest('hex').slice(0, 32);
-    }
-
     async recordBatch(userId: string, dto: CreateTelemetryBatchDto) {
         if (process.env.TELEMETRY_ENABLED === 'false') return;
         const membership = await this.prisma.membership.findFirst({
@@ -42,18 +25,18 @@ export class TelemetryService {
         });
         if (!membership) throw new NotFoundException('Organization not found or access denied');
 
-        const ctx: BatchContext = {
+        const ctx: NavEventRowContext = {
             sessionId: dto.sessionId,
             variant: dto.variant,
-            userHash: this.hash('user', userId),
-            tenantHash: this.hash('tenant', dto.orgId),
+            userHash: hashId(this.salt, 'user', userId),
+            tenantHash: hashId(this.salt, 'tenant', dto.orgId),
             role: membership.role,
         };
 
         const now = Date.now();
         const rows: Prisma.NavEventCreateManyInput[] = [];
         for (const event of dto.events) {
-            const row = this.buildRow(event, ctx, now);
+            const row = buildNavEventRow(event, ctx, { now, salt: this.salt });
             if (row) rows.push(row);
         }
 
@@ -61,46 +44,5 @@ export class TelemetryService {
         if (dropped > 0) this.logger.warn(`Dropped ${dropped} invalid event(s) from a batch of ${dto.events.length}`);
 
         if (rows.length > 0) await this.prisma.navEvent.createMany({ data: rows });
-    }
-
-    /** Returns null for anything that must not be stored. */
-    private buildRow(e: TelemetryEventDto, ctx: BatchContext, now: number): Prisma.NavEventCreateManyInput | null {
-        const ts = new Date(e.clientTs).getTime();
-        if (Number.isNaN(ts) || ts < now - MAX_AGE_MS || ts > now + MAX_FUTURE_MS) return null;
-
-        const toRoute = e.toRoute ? normalizeRoute(e.toRoute) : null;
-        const fromRoute = e.fromRoute ? normalizeRoute(e.fromRoute) : null;
-
-        if (e.toRoute && !toRoute) return null;
-        if (e.fromRoute && !fromRoute) return null;
-
-        if ((e.type === 'route_change' || e.type === 'link_hover' || e.type === 'page_ready') && !toRoute) return null;
-
-        // entityType and entityId only make sense together
-        if (Boolean(e.entityType) !== Boolean(e.entityId)) return null;
-        if (e.type === 'entity_open' && !e.entityType) return null;
-        if (e.type === 'page_change' && !e.page) return null;
-        if (e.type === 'page_ready' && e.latencyMs === undefined) return null;
-        if (e.type === 'action' && !e.action) return null;
-
-        return {
-            sessionId: ctx.sessionId,
-            userHash: ctx.userHash,
-            tenantHash: ctx.tenantHash,
-            role: ctx.role,
-            variant: ctx.variant,
-            type: e.type,
-            fromRoute,
-            toRoute,
-            entityType: e.entityType ?? null,
-            entityHash: e.entityId ? this.hash(`entity:${e.entityType}`, e.entityId) : null,
-            dwellMs: e.dwellMs ?? null,
-            latencyMs: e.latencyMs ?? null,
-            clientTs: new Date(ts),
-            page: e.page ?? null,
-            bytes: e.bytes ?? null,
-            cacheState: e.cacheState ?? null,
-            action: e.action ?? null,
-        };
     }
 }
