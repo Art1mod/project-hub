@@ -37,9 +37,16 @@ export interface SessionInput {
 type EventFields = Omit<TelemetryEventDto, 'clientTs'>;
 
 const MAX_DWELL_MS = 86_400_000;
-const STEP_BASE_MS = 25_000;
 const MAX_THINK_MS = 120_000;
 const DRIVE_BY_MAX_MS = 55_000;
+/** Chance that a gap while reading a page ends in a hover (the rest is silent reading). */
+const AMBIENT_HOVER_P: Partial<Record<PageRoute, number>> = {
+    '/dashboard': 0.9,
+    '/projects': 0.8,
+    '/projects/:id': 0.35,
+    '/members': 0.5,
+    '/invitations': 0.5,
+};
 
 const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x));
 
@@ -57,13 +64,13 @@ class SessionRunner {
     private openTask: string | undefined;
     private readonly cache = new CacheModel();
     private readonly hovers = new HoverTracker();
-    private readonly pace: number;
+    /** Hovers allowed on the current page visit (measured hovers-per-navigation), and used so far. */
+    private hoverBudget = 0;
+    private visitHovers = 0;
 
     constructor(private readonly input: SessionInput) {
         this.t = input.slot.start.getTime();
         this.orgId = input.slot.startOrgId;
-        const natural = Math.max(30_000, input.steps.length * STEP_BASE_MS);
-        this.pace = clamp((input.slot.targetMinutes * 60_000) / natural, 0.4, 4);
     }
 
     private get rng() {
@@ -89,8 +96,26 @@ class SessionRunner {
         this.t += Math.max(0, Math.round(ms));
     }
 
+    /** A short pause inside a step (filling a form, reading a task). */
     private think(scale = 1) {
-        this.wait(clamp(this.rng.lognormal(CAL.gapMs.median, CAL.gapMs.p90) * this.pace * scale, 200, MAX_THINK_MS));
+        this.wait(clamp(this.rng.lognormal(CAL.gapMs.median, CAL.gapMs.p90) * scale, 200, MAX_THINK_MS));
+    }
+
+    /**
+     * Time spent on the current page between steps. Real users keep moving the mouse while they read, so
+     * the time is cut into gaps from the measured inter-event distribution, and some gaps end in a hover.
+     */
+    private dwell(totalMs: number) {
+        const end = this.t + Math.round(totalMs);
+        const p = this.route ? AMBIENT_HOVER_P[this.route] ?? 0.3 : 0;
+        for (;;) {
+            const gap = clamp(this.rng.lognormal(CAL.gapMs.median, CAL.gapMs.p90), 150, 60_000);
+            if (this.t + gap >= end) break;
+            this.wait(gap);
+            // Keep one hover of the visit's budget for the link that is eventually clicked.
+            if (this.visitHovers < this.hoverBudget - 1 && this.rng.chance(p)) this.scan(1, undefined, false);
+        }
+        this.t = Math.max(this.t, end);
     }
 
     // ---- hovers and navigation ----
@@ -101,27 +126,24 @@ class SessionRunner {
         const ev = this.hovers.hover(target, this.route, this.t);
         if (!ev) return false;
         this.emit(ev as EventFields, Date.parse(ev.clientTs));
+        this.visitHovers++;
         return true;
     }
 
-    private scan(n: number, exclude?: HoverTarget) {
+    private scan(n: number, exclude?: HoverTarget, pause = true) {
         if (!this.route) return;
         const view = { orgId: this.orgId, role: roleIn(this.input.user, this.orgId), projectId: this.projectId, dashboardFilter: this.filter };
         const candidates = hoverTargets(this.route, this.input.world, view).filter((h) => h.toRoute !== this.route && h.to !== exclude?.to);
         if (candidates.length === 0) return;
         for (let i = 0; i < n; i++) {
-            this.wait(this.rng.uniform(200, 2500));
+            if (pause) this.wait(this.rng.uniform(200, 2500));
             this.hover(this.rng.pick(candidates));
         }
     }
 
-    private scanCount(): number {
-        return clamp(Math.round(this.rng.lognormal(CAL.hoversPerNav.median, CAL.hoversPerNav.p90)) - 1, 0, CAL.hoversPerNav.max - 1);
-    }
-
-    /** A clicked link: scan hovers, a hover on the target, then the navigation after the hover-to-click lag. */
+    /** A clicked link: the rest of the visit's hover budget, a hover on the target, then the navigation after the hover-to-click lag. */
     private click(target: HoverTarget, opts: { page?: number; task?: string; scan?: number } = {}) {
-        this.scan(opts.scan ?? this.scanCount(), target);
+        this.scan(opts.scan ?? Math.max(0, this.hoverBudget - 1 - this.visitHovers), target);
         this.wait(this.rng.uniform(150, 900));
         this.hover(target, true);
         this.wait(clamp(this.rng.lognormal(CAL.hoverLagMs.median, CAL.hoverLagMs.p90), 100, 1500));
@@ -139,6 +161,8 @@ class SessionRunner {
         } as EventFields);
         this.route = toRoute;
         this.lastRouteAt = at;
+        this.visitHovers = 0;
+        this.hoverBudget = clamp(Math.round(this.rng.lognormal(CAL.hoversPerNav.median, CAL.hoversPerNav.p90)), 1, CAL.hoversPerNav.max);
         this.projectId = toRoute === '/projects/:id' ? opts.projectId : undefined;
         this.page = opts.page ?? 1;
         this.openTask = opts.task;
@@ -381,8 +405,18 @@ class SessionRunner {
         if (slot.driveBy) {
             this.runDriveBy();
         } else {
+            // Spread the slot's target length over the steps; each step's share is spent on the page first.
+            const endAt = slot.start.getTime() + slot.targetMinutes * 60_000;
+            const work = steps.filter((s) => s.step !== 'leave' && s.step !== 'idle').length;
+            let left = work;
             for (const step of steps) {
-                if (step.step !== 'leave') this.think(0.6);
+                if (step.step !== 'leave' && step.step !== 'idle') {
+                    const budget = Math.max(0, endAt - this.t) / Math.max(1, left);
+                    this.dwell(budget * this.rng.uniform(0.4, 1.4));
+                    left--;
+                } else if (step.step === 'leave') {
+                    this.dwell(Math.max(0, endAt - this.t) * this.rng.uniform(0.3, 1));
+                }
                 this.runStep(step);
             }
         }
