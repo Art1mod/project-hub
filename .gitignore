@@ -54,3 +54,7 @@ backend/.devin/
 *.njsproj
 *.sln
 *.swp
+
+# --- Simulated telemetry runs and the real-session snapshot ---
+backend/project-hub/sim/runs/
+backend/project-hub/sim/ground-truth/
