@@ -6,6 +6,10 @@ A multi-tenant project and task management app, built as a testbed for measuring
 
 **Status: work in progress. There are no final results yet.** The app, the client cache and the telemetry pipeline are implemented. The prefetching itself is not (see [Roadmap](#roadmap)).
 
+![Dashboard with workload donut, status cards and a "Needs attention" list](docs/screenshots/dashboard.png)
+
+_The dashboard of one organization, showing stats for **all projects** (94 tasks: 41 to do, 21 in progress, 32 done, 34% complete). The project selector in the top right switches every number on the page to a **single project**, and the choice is remembered per organization. "Needs attention" lists the open urgent and high-priority tasks with their project and assignee._
+
 ## The problem
 
 In a multi-tenant SaaS app, every page change can wait on a network round trip to a shared backend. Users feel that wait, and it grows with data volume and load.
@@ -36,6 +40,10 @@ No measurements have been collected for the thesis yet. These are the metrics an
 **Baseline:** the `control` variant, which is the current app: TanStack Query cache, no prefetching.
 
 **Method:** compare `control` and `prefetch` sessions on the metrics above using the `variant` field on each event. Analysis runs on the `NavEvent` table, which Metabase (in `docker-compose.yml`) can query. The client currently hard-codes the variant. A code comment says it should later be assigned per user by the server.
+
+![Metabase table of NavEvent rows for one session](docs/screenshots/metabase.png)
+
+_The raw telemetry in Metabase: one session recorded during development (144 events). Each row is one event: a link hover, route change, page ready (with `LatencyMs` and `CacheState`), entity open, page change or user action. User, tenant and entity IDs are hashed, and every row has `Variant = control`. This shows the data the evaluation will run on. It is not a result._
 
 ## Preliminary findings
 
@@ -75,7 +83,21 @@ Metabase ──► PostgreSQL   (exploring NavEvent data)
 
 **Multi-tenancy.** The tenant is the `Organization`. All tenants share one database and one schema. A user can belong to several organizations with a different role in each (`OWNER`, `ADMIN`, `MEMBER`, stored on `Membership`). Projects belong to an organization and tasks belong to a project. The service layer checks membership on each request, either directly or by filtering through `memberships`, and returns "not found or access denied" otherwise. On the client, the active organization is held in a context, and cache keys include its ID so tenants do not share cached data.
 
+The same account in two organizations, with a different role in each:
+
+| | |
+|---|---|
+| ![Settings page of an organization where the user is a member: no Invitations link and a read-only notice](docs/screenshots/access-member.png)<br>**Creative Spark Agency, as a member.** The sidebar has no Invitations link, and Settings says only owners and admins can change organization settings. | ![Settings page of an organization where the user can edit: Invitations link and an editable organization name](docs/screenshots/access-admin.png)<br>**NovaTech Software Solutions, as an owner or admin.** The Invitations link is there, and the organization name can be edited. |
+
 **Telemetry and tenants.** Each batch holds events for one organization, and the server checks membership before storing it. User, tenant and entity IDs are stored as truncated HMAC-SHA256 hashes. The server refuses to start without a `TELEMETRY_SALT` of at least 32 characters.
+
+## Product tour
+
+| | |
+|---|---|
+| ![Project task table with a task panel open](docs/screenshots/task.png)<br>**Tasks.** A project's tasks in a paginated table (10 per page) with sortable status and priority columns. Status, priority and assignee can be edited inline or in the side panel. | ![Task panel with an image and a PDF attached, and the file picker open](docs/screenshots/attachment.png)<br>**Attachments.** Images and PDFs up to 10 MB, at most 10 per task. The file is uploaded to S3-compatible storage with a presigned URL. |
+| ![Projects list with a create form](docs/screenshots/projects.png)<br>**Projects.** All projects of the active organization. The create form is shown only to owners and admins. | ![Members table with roles and Remove actions](docs/screenshots/members.png)<br>**Members.** Everyone in the organization with their role (owner, admin or member). Owners and admins can remove members. |
+| ![Invitations page with a send form and pending invitations](docs/screenshots/invitations.png)<br>**Invitations.** Owners and admins invite people by email and role. Invitations stay pending until accepted, expire after 7 days and can be revoked. | |
 
 ## Key decisions and trade-offs
 
