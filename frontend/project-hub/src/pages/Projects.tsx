@@ -17,14 +17,14 @@ export function Projects () {
     const queryClient = useQueryClient();
     const navigate = useNavigate();
 
-    const {data: projects, isLoading, isError} = useQuery({
+    const {data: projects, isLoading, isError, error} = useQuery({
         queryKey: ['projects', activeOrgId],
         queryFn: () => getProjects(activeOrgId!),
         enabled: !!activeOrgId,
         select: sortProjects  
     });
 
-    usePageReady('/projects', ['projects', activeOrgId], !!projects);
+    usePageReady('/projects', ['projects', activeOrgId], !!projects, error);
 
     const createProjectMutation = useMutation({
         mutationFn: () => createProject(activeOrgId!, {name, description}),
