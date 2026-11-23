@@ -8,7 +8,7 @@ import { ConfirmModal } from '../components/ConfirmModal';
 import { Can } from '../components/Can';
 import { hoverIntent } from '../telemetry/hover';
 import { setPendingTrigger } from '../telemetry/trigger';
-import { endTelemetrySession } from '../telemetry/tracker';
+import { endTelemetrySession, setTelemetryOrg, track } from '../telemetry/tracker';
 import { useNavigationTracking } from '../telemetry/useNavigationTracking';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 
@@ -58,6 +58,9 @@ export function AppLayout() {
             onSuccess: async (newOrg) => {
                 await queryClient.invalidateQueries({queryKey: ['organizations']});
                 setActiveOrgId(newOrg.id);
+                // Attribute the event to the new organization, not the one that was active
+                setTelemetryOrg(newOrg.id);
+                track({ type: 'action', action: 'org_create' });
                 closeCreateOrgModal();
             },   
         });
@@ -104,7 +107,12 @@ export function AppLayout() {
                                 </div>
                                 <select
                                     value={activeOrgId || ""}
-                                    onChange={(e) => setActiveOrgId(e.target.value)}
+                                    onChange={(e) => {
+                                        // Attributed to the organization the user switched to
+                                        setTelemetryOrg(e.target.value);
+                                        track({ type: 'action', action: 'org_switch' });
+                                        setActiveOrgId(e.target.value);
+                                    }}
                                     aria-label="Organization"
                                     className='min-w-0 flex-1 cursor-pointer truncate rounded-md bg-transparent py-1 text-sm font-bold text-zinc-100 outline-none'
                                 >
