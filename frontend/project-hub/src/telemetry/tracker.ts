@@ -1,5 +1,7 @@
 import { API_URL } from '../lib/config';
 import { TELEMETRY_ENABLED, VARIANT } from './config';
+import { readEnvironment } from './environment';
+import type { TelemetryAction, TelemetryDetail, TelemetryTrigger } from './types';
 
 export type TelemetryEventType =
     | 'route_change' | 'link_hover' | 'entity_open' | 'page_change'
@@ -18,7 +20,10 @@ export interface TelemetryEvent {
     page?: number;
     bytes?: number;
     cacheState?: 'hit' | 'stale' | 'miss';
-    action?: string;
+    action?: TelemetryAction;
+    trigger?: TelemetryTrigger; // what caused the navigation or action
+    position?: number;          // 1-based place in the visible list
+    detail?: TelemetryDetail;   // small per-action object, validated by the server
 }
 
 export interface TelemetryBatch {
@@ -110,6 +115,8 @@ class Tracker {
     private currentRoute: string | null = null;
     private started = false;
     private sink: TelemetrySink;
+    private hiddenSince: number | null = null;
+    private hiddenTotal = 0;
 
     constructor(sink: TelemetrySink) {
         this.sink = sink
@@ -132,18 +139,35 @@ class Tracker {
         if (!this.orgId || !localStorage.getItem('token')) return;
         this.start();
 
-        if (markSessionStarted()) this.enqueue(this.orgId, { type: 'session_start' });
+        if (markSessionStarted()) this.enqueue(this.orgId, { type: 'session_start', detail: readEnvironment() });
         this.enqueue(this.orgId, event);
     }
 
     private enqueue(orgId: string, event: Omit<TelemetryEvent, 'clientTs'>) {
         this.queue.push({ orgId, event: { ...event, clientTs: new Date().toISOString() } });
         if (this.queue.length > MAX_QUEUE) this.queue.splice(0, this.queue.length - MAX_QUEUE);
-        if (this.queue.length >= FLUSH_AT) this.flush(false);
+        if (this.queue.length >= FLUSH_AT) void this.flush(false);
     }
 
-    flush(keepalive = false) {
-        if (this.queue.length === 0) return;
+    /** Time the tab was hidden since the last call, in ms. Resets the counter. */
+    takeHiddenMs(): number {
+        const now = Date.now();
+        let total = this.hiddenTotal;
+        if (this.hiddenSince !== null) {
+            total += now - this.hiddenSince;
+            this.hiddenSince = now; // the tab is still hidden: keep counting from here
+        }
+        this.hiddenTotal = 0;
+        return Math.min(Math.round(total), 86_400_000); // matches the server limit
+    }
+
+    /** Sends everything queued and resolves when the requests settle. Never rejects. */
+    flushNow(): Promise<void> {
+        return this.flush(true);
+    }
+
+    flush(keepalive = false): Promise<void> {
+        if (this.queue.length === 0) return Promise.resolve();
         const items = this.queue;
         this.queue = [];
 
@@ -156,14 +180,20 @@ class Tracker {
         }
 
         const sessionId = getSessionId();
+        const sends: Promise<void>[] = [];
         for (const [orgId, events] of byOrg) {
             for (let i = 0; i < events.length; i += MAX_BATCH) {
-                void this.sink.send(
-                    { orgId, sessionId, variant: VARIANT, events: events.slice(i, i + MAX_BATCH) },
-                    keepalive,
+                sends.push(
+                    this.sink
+                        .send(
+                            { orgId, sessionId, variant: VARIANT, events: events.slice(i, i + MAX_BATCH) },
+                            keepalive,
+                        )
+                        .catch(() => undefined), // telemetry must never affect the app
                 );
             }
         }
+        return Promise.all(sends).then(() => undefined);
     }
 
     /** Called on logout: send what is left, then forget the session. */
@@ -186,11 +216,19 @@ class Tracker {
         if (this.started) return;
         this.started = true;
 
-        window.setInterval(() => this.flush(false), FLUSH_INTERVAL_MS);
+        if (document.visibilityState === 'hidden') this.hiddenSince = Date.now();
+
+        window.setInterval(() => void this.flush(false), FLUSH_INTERVAL_MS);
         document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'hidden') this.flush(true);
+            if (document.visibilityState === 'hidden') {
+                this.hiddenSince = Date.now();
+                void this.flush(true);
+            } else if (this.hiddenSince !== null) {
+                this.hiddenTotal += Date.now() - this.hiddenSince;
+                this.hiddenSince = null;
+            }
         });
-        window.addEventListener('pagehide', () => this.flush(true));
+        window.addEventListener('pagehide', () => void this.flush(true));
     }
 }
 
@@ -201,3 +239,5 @@ export const setTelemetryOrg = tracker.setOrg.bind(tracker);
 export const setTelemetryRoute = tracker.setRoute.bind(tracker);
 export const getTelemetryRoute = tracker.getRoute.bind(tracker);
 export const endTelemetrySession = tracker.endSession.bind(tracker);
+export const takeHiddenMs = tracker.takeHiddenMs.bind(tracker);
+export const flushNow = tracker.flushNow.bind(tracker);
