@@ -40,11 +40,14 @@ npm run lint
 
 The frontend has no test runner.
 
+Backend specs that import `@nestjs/*` do not run: Nest 12 is ESM-only and Jest here is CommonJS (most suites fail with "Must use import to load ES Module"). `src/telemetry/telemetry.service.spec.ts` works by mocking `@nestjs/common` and the Prisma service with `jest.mock` factories. Do the same for new service specs, or fix Jest for ESM first.
+
 ## Environment
 
 `backend/project-hub/.env` (copy from `.env.example`). Required: `DATABASE_URL`, `JWT_SECRET`, `S3_*`, and `TELEMETRY_SALT` (at least 32 characters, or the API refuses to start). Local S3 values: endpoint `http://localhost:8333`, bucket `project-hub-attachments`, keys `admin`/`secret`, `S3_FORCE_PATH_STYLE=true`.
 
 - `.env.example` ships `TELEMETRY_ENABLED=false`, which makes the backend drop every telemetry batch. Set it to `true` to record events.
+- `TELEMETRY_ORIGIN` (`real`, `pilot` or `synthetic`, default `real`) is stamped on every stored row by the server. Any other value stops the API at startup.
 - `STUDY_MODE=true` is required to add members through the bulk organization endpoint (`POST /organizations/bulk`). Members and assignees must already be registered users.
 - CORS allows only `http://localhost:5173` (hard-coded in `main.ts`). The frontend reads `VITE_API_URL`, default `http://localhost:3000`.
 
@@ -70,10 +73,11 @@ Events flow: hooks in `frontend/.../src/telemetry/` -> batched `POST /telemetry/
 
 - `usePageReady(route, queryKey, isReady)` reads the cache state (`hit`/`stale`/`miss`) from the query cache **at mount**, then reports latency. Call it once per page, above any early return.
 - `hoverIntent()` (150 ms delay, 2 s cooldown) is the behavior signal that a prefetcher would use.
-- **Keep these in sync by hand:** the route list in `frontend/.../telemetry/routes.ts`, `backend/.../telemetry/route-normalizer.ts` and the routes in `App.tsx`. Event types and actions in `tracker.ts` must match `create-telemetry-batch.dto.ts`. A new tracked page or action that is missing from either side is silently dropped (the server logs a warning).
+- Events can carry `trigger` (what caused them), `position` and a small `detail` object. A click handler calls `setPendingTrigger` just before navigating, and `route_change` consumes it (2 s TTL). On the server, `detail-schema.ts` keeps only the allowlisted keys per action and rejects an event whose known key has an invalid value. Rows also get `origin` and `schemaVersion` (2; rows from before the extension are `pilot`/1). Every action, trigger and key is documented in `docs/telemetry.md`. Never log free text or anything a user can type.
+- **Keep these in sync by hand:** the route list in `frontend/.../telemetry/routes.ts`, `backend/.../telemetry/route-normalizer.ts` and the routes in `App.tsx`. Event types and actions in `tracker.ts` must match `create-telemetry-batch.dto.ts`, and the vocabularies in `frontend/.../telemetry/types.ts` must match `telemetry-vocabulary.ts` and `detail-schema.ts`. A new tracked page, action or `detail` key that is missing from either side is silently dropped (the server logs a warning).
 - The server stores HMAC-SHA256 hashes (truncated to 32 hex characters) of user, tenant and entity IDs, using `TELEMETRY_SALT`. Raw IDs are never stored. It also rejects events older than 24 h or more than 5 min in the future. Ingestion is limited to 30 batches/min per user.
 - `prefetch_issued`/`prefetch_used` event types and `variant: 'prefetch'` exist, but nothing emits them. `VARIANT` is hard-coded to `'control'` in `telemetry/config.ts`.
-- Known bug: `TELEMETRY_ENABLED` in `telemetry/config.ts` is inverted (`VITE_TELEMETRY_ENABLED !== 'true'`), so setting it to `true` turns telemetry off.
+- Client telemetry is on by default; set `VITE_TELEMETRY_ENABLED=false` to turn it off (`telemetry/config.ts`). The backend has its own switch, `TELEMETRY_ENABLED`, which defaults to on in code but is `false` in `.env.example`.
 
 ### Simulator (unmerged)
 The simulated-telemetry generator lives on the branch `feat/sim-telemetry`, with its design doc under `docs/superpowers/` on that branch. Do not commit `backend/project-hub/sim/runs/` or `sim/ground-truth/`. `ground-truth` is raw data from real sessions, and `runs` is generated output.

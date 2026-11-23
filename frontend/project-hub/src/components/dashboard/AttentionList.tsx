@@ -1,6 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import type { AttentionTask } from "../../api/analytics";
 import { hoverIntent } from "../../telemetry/hover";
+import { setPendingTrigger } from "../../telemetry/trigger";
+import type { TelemetryTrigger } from "../../telemetry/types";
 import { PRIORITY_OPTIONS, STATUS_OPTIONS } from "../../constants/tasks";
 
 
@@ -12,7 +14,14 @@ const PRIORITY_BADGE: Record<string, string> = {
 const label = (options: { value: string; label: string }[], value: string) =>
     options.find((o) => o.value === value)?.label ?? value;
 
-export function AttentionRow({ task, showProject }: { task: AttentionTask; showProject: boolean }) {
+interface AttentionRowProps {
+    task: AttentionTask;
+    showProject: boolean;
+    trigger: Extract<TelemetryTrigger, "attention_row" | "attention_modal">; // which surface the row is on
+    position: number; // 1-based place in the visible list or modal page
+}
+
+export function AttentionRow({ task, showProject, trigger, position }: AttentionRowProps) {
     const navigate = useNavigate();
     const to = `/projects/${task.project.id}?page=${task.page}&task=${task.id}`;
 
@@ -20,8 +29,11 @@ export function AttentionRow({ task, showProject }: { task: AttentionTask; showP
         <li>
             <button
                 type="button"
-                onClick={() => navigate(to)}
-                {...hoverIntent(to, { entityType: 'task', entityId: task.id, page: task.page })}
+                onClick={() => {
+                    setPendingTrigger(trigger);
+                    navigate(to);
+                }}
+                {...hoverIntent(to, { entityType: 'task', entityId: task.id, page: task.page }, { trigger, position })}
                 className="flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left transition-colors hover:bg-zinc-800/60"
             >
                 <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITY_BADGE[task.priority]}`}>
@@ -63,8 +75,14 @@ export function AttentionList({ tasks, total, showProject, onShowAll }: Attentio
                 <p className="py-6 text-center text-sm text-zinc-500">Nothing urgent. Nice work.</p>
             ) : (
                 <ul className="flex flex-col">
-                    {tasks.map((task) => (
-                        <AttentionRow key={task.id} task={task} showProject={showProject} />
+                    {tasks.map((task, index) => (
+                        <AttentionRow
+                            key={task.id}
+                            task={task}
+                            showProject={showProject}
+                            trigger="attention_row"
+                            position={index + 1}
+                        />
                     ))}
                 </ul>
             )}

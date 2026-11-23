@@ -13,7 +13,9 @@ import { TaskPanel } from "../components/tasks/TaskPanel";
 import { Pagination } from "../components/Pagination";
 import { useTrackEntityOpen } from "../telemetry/useTrackEntityOpen";
 import { track } from "../telemetry/tracker";
+import { getLastNavTrigger, peekPendingTrigger, setPendingTrigger } from "../telemetry/trigger";
 import { usePageReady } from "../telemetry/usePageReady";
+import { taskFieldOf } from "../telemetry/classify";
 
 const TASKS_PER_PAGE = 10; 
 
@@ -28,6 +30,8 @@ export function ProjectDetails() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const menuRef = useRef<HTMLDivElement>(null);
+    // The task whose entity_open was already tracked, so a table click is not counted twice
+    const lastTrackedTask = useRef<string | null>(null);
 
     const { activeOrgId } = useOrganization();
     const initialOrgId = useRef<string | null>(activeOrgId);
@@ -41,6 +45,7 @@ export function ProjectDetails() {
         if (!initialOrgId.current && activeOrgId) {
             initialOrgId.current = activeOrgId;
         } else if (initialOrgId.current && activeOrgId && initialOrgId.current !== activeOrgId) {
+            setPendingTrigger('redirect');
             navigate('/projects');
         }
     }, [activeOrgId, navigate]);
@@ -55,7 +60,7 @@ export function ProjectDetails() {
         return () => document.removeEventListener("mousedown", onMouseDown);
     }, [isMenuOpen]);
 
-    const { data: project, isLoading: isProjectLoading, isError: isProjectError } = useQuery({
+    const { data: project, isLoading: isProjectLoading, isError: isProjectError, error: projectError } = useQuery({
         queryKey: ['project', projectId],
         queryFn: () => getProject(projectId!),
         enabled: !!projectId && !isDeleted,
@@ -68,7 +73,7 @@ export function ProjectDetails() {
     const sortBy = rawSort === "status" || rawSort === "priority" ? rawSort : undefined;
     const order = searchParams.get("order") === "desc" ? "desc" : "asc";
 
-    const { data: tasksPage, isLoading, isError, isPlaceholderData } = useQuery({
+    const { data: tasksPage, isLoading, isError, isPlaceholderData, error: tasksError } = useQuery({
         queryKey: ['tasks', projectId, page, sortBy ?? 'default', order],
         queryFn: () => getTasks(projectId!, page, TASKS_PER_PAGE, sortBy ? { sortBy, order } : undefined),
         enabled: !!projectId && !isDeleted,
@@ -76,7 +81,11 @@ export function ProjectDetails() {
     });
 
     // Click cycle: off -> asc -> desc -> off
-    const toggleSort = (column: SortBy) =>
+    const toggleSort = (column: SortBy) => {
+        // Tracked from the click only, never from URL state on load
+        const next = sortBy !== column ? "asc" : order === "asc" ? "desc" : "default";
+        track({ type: 'action', action: 'sort_change', detail: { sortBy: column, order: next } });
+
         updateParams((p) => {
             if (sortBy !== column) {
                 p.set("sort", column);
@@ -90,12 +99,32 @@ export function ProjectDetails() {
             p.delete("page"); // a new ordering starts from page 1
             p.delete("task");
         });
+    };
 
-    usePageReady('/projects/:id', ['project', projectId], !!project && !!tasksPage);
+    usePageReady('/projects/:id', ['project', projectId], !!project && !!tasksPage, projectError ?? tasksError);
     const tasks = tasksPage?.data ?? [];
     const meta = tasksPage?.meta;
 
     const selectedTask = tasks.find((t) => t.id === searchParams.get("task")) ?? null;
+    const selectedTaskId = selectedTask?.id ?? null;
+
+    // A task that arrives through the URL (?task=, e.g. from a Needs attention row) is
+    // opened without selectTask: track it here. The trigger is still pending if the task
+    // was cached, otherwise it is the one the route change already took.
+    useEffect(() => {
+        if (!selectedTaskId) {
+            lastTrackedTask.current = null;
+            return;
+        }
+        if (lastTrackedTask.current === selectedTaskId) return;
+        lastTrackedTask.current = selectedTaskId;
+        track({
+            type: 'entity_open',
+            entityType: 'task',
+            entityId: selectedTaskId,
+            trigger: peekPendingTrigger() ?? getLastNavTrigger() ?? undefined,
+        });
+    }, [selectedTaskId]);
 
     // Update one URL param without wiping the others
     const updateParams = (change: (p: URLSearchParams) => void) =>
@@ -107,7 +136,8 @@ export function ProjectDetails() {
 
     const selectTask = (task: Task) => {
         if (task.id !== selectedTask?.id) {
-            track({ type: 'entity_open', entityType: 'task', entityId: task.id });
+            lastTrackedTask.current = task.id;
+            track({ type: 'entity_open', entityType: 'task', entityId: task.id, trigger: 'table_row' });
         }
         updateParams((p) => p.set("task", task.id));
     };
@@ -115,7 +145,7 @@ export function ProjectDetails() {
     const closePanel = () => updateParams((p) => p.delete("task"));
     
     const goToPage = (n: number) => {
-        track({ type: 'page_change', page: n, entityType: 'project', entityId: projectId });
+        track({ type: 'page_change', page: n, entityType: 'project', entityId: projectId, trigger: 'pagination' });
             updateParams((p) => {
                 p.set("page", String(n)); 
                 p.delete("task"); // the selected task isn't on the new page
@@ -133,8 +163,15 @@ export function ProjectDetails() {
     const updateTaskMutation = useMutation({
         mutationFn: ({ taskId, data }: { taskId: string, data: Partial<CreateTaskProps> }) =>
             updateTask({ taskId, data }),
-        onSuccess: (updated) => {
-            track({ type: 'action', action: 'task_update', entityType: 'task', entityId: updated.id });
+        onSuccess: (updated, { data }) => {
+            const field = taskFieldOf(data); // the field name only, never its value
+            track({
+                type: 'action',
+                action: 'task_update',
+                entityType: 'task',
+                entityId: updated.id,
+                detail: field ? { field } : undefined,
+            });
             queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
             queryClient.invalidateQueries({ queryKey: ["analytics"] });
         }

@@ -31,13 +31,13 @@ export function Invitations () {
         }
     });
 
-    const { data: invitations, isLoading, isError } = useQuery({
+    const { data: invitations, isLoading, isError, error } = useQuery({
             queryKey: ['invitations', activeOrgId],
             queryFn: () => getPendingInvitations(activeOrgId!),
             enabled: !!activeOrgId
     });
 
-    usePageReady('/invitations', ['invitations', activeOrgId], !!invitations);
+    usePageReady('/invitations', ['invitations', activeOrgId], !!invitations, error);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();

@@ -7,10 +7,13 @@ import { sortProjects } from "../constants/projects";
 import { STATUS_OPTIONS } from "../constants/tasks";
 import { STATUS_COLORS, WorkloadDonut } from "../components/dashboard/WorkloadDonut";
 import { hoverIntent } from "../telemetry/hover";
+import { setPendingTrigger } from "../telemetry/trigger";
+import { track } from "../telemetry/tracker";
+import { sizeBucket } from "../telemetry/classify";
 import { usePageReady } from "../telemetry/usePageReady";
 import { TASKS_PER_PAGE, type Status } from "../api/tasks";
 import { AttentionList } from "../components/dashboard/AttentionList";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AttentionModal } from "../components/dashboard/AttentionModal";
 
 export function Dashboard() {
@@ -18,6 +21,9 @@ export function Dashboard() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const [isAttentionOpen, setIsAttentionOpen] = useState(false);
+    // Set when the user changes the selector ("" means all projects). Page load and the
+    // saved selection never set it, so they are never tracked.
+    const pendingFilter = useRef<string | null>(null);
 
     const { data: projects = [], isSuccess: projectsLoaded } = useQuery({
         queryKey: ["projects", activeOrgId],
@@ -43,6 +49,7 @@ export function Dashboard() {
     const projectId = selectedProject?.id;
 
     const selectProject = (id: string) => {
+        pendingFilter.current = id;
         try {
             if (storageKey) {
                 if (id) localStorage.setItem(storageKey, id);
@@ -57,7 +64,7 @@ export function Dashboard() {
     // Wait for the project list, so a saved project is resolved before any data is fetched
     const ready = !!activeOrgId && projectsLoaded;
 
-    const { data: metrics, isLoading, isError } = useQuery({
+    const { data: metrics, isLoading, isError, error: metricsError } = useQuery({
         queryKey: ["analytics", "workload", activeOrgId, projectId ?? "all"],
         queryFn: () => getWorkload(activeOrgId!, projectId),
         enabled: ready,
@@ -69,17 +76,34 @@ export function Dashboard() {
         enabled: ready,
     });
 
-    usePageReady('/dashboard', ['analytics', 'workload', activeOrgId, projectId ?? 'all'], !!metrics && !!attention);
+    usePageReady('/dashboard', ['analytics', 'workload', activeOrgId, projectId ?? 'all'], !!metrics && !!attention, metricsError);
 
     const total = metrics ? metrics.TODO + metrics.IN_PROGRESS + metrics.DONE : 0;
     const open = metrics ? metrics.TODO + metrics.IN_PROGRESS : 0;
 
+    // Sent once the new project's workload has loaded, so its size bucket is known
+    useEffect(() => {
+        if (pendingFilter.current === null || !metrics) return;
+        pendingFilter.current = null;
+        track({
+            type: 'action',
+            action: 'project_filter_change',
+            entityType: projectId ? 'project' : undefined,
+            entityId: projectId,
+            detail: { projectSize: projectId ? sizeBucket(total) : 'all' },
+        });
+    }, [metrics, projectId, total]);
+
     const destination = projectId ? `/projects/${projectId}` : "/projects";
     const destinationLabel = projectId ? "View tasks" : "View all projects";
-    const goToDestination = () => navigate(destination);
+    const goToDestination = () => {
+        setPendingTrigger('dashboard_card');
+        navigate(destination);
+    };
     const hover = hoverIntent(
         destination,
         projectId ? { entityType: 'project', entityId: projectId } : undefined,
+        { trigger: 'dashboard_card' },
     );
 
     const statusDestination = (status: Status) => {
@@ -157,8 +181,11 @@ export function Dashboard() {
                                     <button
                                         key={option.value}
                                         type="button"
-                                        onClick={() => navigate(to)}
-                                        {...hoverIntent(to, projectId ? { entityType: 'project', entityId: projectId, page } : undefined)}
+                                        onClick={() => {
+                                            setPendingTrigger('dashboard_card');
+                                            navigate(to);
+                                        }}
+                                        {...hoverIntent(to, projectId ? { entityType: 'project', entityId: projectId, page } : undefined, { trigger: 'dashboard_card' })}
                                         className="rounded-xl border border-white/10 bg-zinc-900 p-5 text-left transition-colors hover:border-violet-500/50"
                                     >
                                         <div className="flex items-center gap-2">
@@ -205,7 +232,10 @@ export function Dashboard() {
                             tasks={attention.tasks}
                             total={attention.total}
                             showProject={!projectId}
-                            onShowAll={() => setIsAttentionOpen(true)}
+                            onShowAll={() => {
+                                track({ type: 'action', action: 'attention_modal_open' });
+                                setIsAttentionOpen(true);
+                            }}
                         />
                     )}
 

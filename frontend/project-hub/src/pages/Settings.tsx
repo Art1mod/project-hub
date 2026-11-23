@@ -1,10 +1,11 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useOrganization } from "../contexts/OrganizationContext";
 import { updateOrganization, deleteOrganization, type Organization } from "../api/organizations";
 import { useNavigate } from "react-router-dom";
 import { ConfirmModal } from "../components/ConfirmModal";
 import { Can } from "../components/Can";
+import { flushNow, track } from "../telemetry/tracker";
 
 export function Settings() {
   const queryClient = useQueryClient();
@@ -22,9 +23,13 @@ export function Settings() {
     mutationFn: ({ orgId, newName }: { orgId: string; newName: string }) =>
       updateOrganization(orgId, newName),
     onSuccess: async () => {
+      track({ type: "action", action: "org_update" });
       await queryClient.invalidateQueries({ queryKey: ["organizations"] });
     },
   });
+
+  // Stops a second click from recording the delete twice while telemetry is flushing
+  const deleteStarted = useRef(false);
 
   const deleteOrganizationMutation = useMutation({
     mutationFn: (orgId: string) => deleteOrganization(orgId),
@@ -55,9 +60,22 @@ export function Settings() {
     updateMutation.mutate({ orgId: activeOrg.id, newName: name.trim() });
   };
 
-  const handleDelete = () => {
-    if (!activeOrg || deleteOrganizationMutation.isPending) return;
-    deleteOrganizationMutation.mutate(activeOrg.id);
+  const handleDelete = async () => {
+    if (!activeOrg || deleteOrganizationMutation.isPending || deleteStarted.current) return;
+    deleteStarted.current = true;
+
+    // The server only stores events for organizations the user still belongs to, and
+    // deleting this one removes the membership. Record the event and send it before
+    // the DELETE request. It records the intent: a failed delete is still logged.
+    // flushNow never rejects, so the delete always goes ahead.
+    track({ type: "action", action: "org_delete" });
+    await flushNow();
+
+    deleteOrganizationMutation.mutate(activeOrg.id, {
+      onSettled: () => {
+        deleteStarted.current = false;
+      },
+    });
   };
 
   if (!activeOrg) {

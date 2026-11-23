@@ -4,6 +4,8 @@ import { createHmac } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTelemetryBatchDto, TelemetryEventDto } from './dto/create-telemetry-batch.dto';
 import { normalizeRoute } from './route-normalizer';
+import { sanitizeDetail } from './detail-schema';
+import { TELEMETRY_ORIGINS, TELEMETRY_SCHEMA_VERSION, type TelemetryOrigin } from './telemetry-vocabulary';
 
 const MAX_AGE_MS = 24 * 60 * 60 * 1000;
 const MAX_FUTURE_MS = 5 * 60 * 1000;
@@ -14,12 +16,14 @@ interface BatchContext {
     userHash: string;
     tenantHash: string;
     role: Role;
+    origin: TelemetryOrigin;
 }
 
 @Injectable()
 export class TelemetryService {
     private readonly logger = new Logger(TelemetryService.name);
     private readonly salt: string;
+    private readonly origin: TelemetryOrigin;
 
     constructor(private prisma: PrismaService) {
         const salt = process.env.TELEMETRY_SALT;
@@ -27,6 +31,13 @@ export class TelemetryService {
             throw new Error('TELEMETRY_SALT must be set to at least 32 characters');
         }
         this.salt = salt;
+
+        // Set by the server, never by the client. Fail fast like the salt.
+        const origin = process.env.TELEMETRY_ORIGIN || 'real';
+        if (!(TELEMETRY_ORIGINS as readonly string[]).includes(origin)) {
+            throw new Error(`TELEMETRY_ORIGIN must be one of: ${TELEMETRY_ORIGINS.join(', ')}`);
+        }
+        this.origin = origin as TelemetryOrigin;
     }
 
     // The domain prefix means the same id never produces the same hash in two roles
@@ -48,6 +59,7 @@ export class TelemetryService {
             userHash: this.hash('user', userId),
             tenantHash: this.hash('tenant', dto.orgId),
             role: membership.role,
+            origin: this.origin,
         };
 
         const now = Date.now();
@@ -83,6 +95,10 @@ export class TelemetryService {
         if (e.type === 'page_ready' && e.latencyMs === undefined) return null;
         if (e.type === 'action' && !e.action) return null;
 
+        // Unknown detail keys are dropped; a known key with an invalid value rejects the event
+        const detail = sanitizeDetail(e.type, e.action, e.detail);
+        if (!detail.ok) return null;
+
         return {
             sessionId: ctx.sessionId,
             userHash: ctx.userHash,
@@ -101,6 +117,11 @@ export class TelemetryService {
             bytes: e.bytes ?? null,
             cacheState: e.cacheState ?? null,
             action: e.action ?? null,
+            trigger: e.trigger ?? null,
+            position: e.position ?? null,
+            detail: detail.detail ?? undefined, // undefined (not Prisma.JsonNull) so the column stays SQL NULL
+            origin: ctx.origin,
+            schemaVersion: TELEMETRY_SCHEMA_VERSION,
         };
     }
 }
