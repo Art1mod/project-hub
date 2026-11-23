@@ -6,6 +6,7 @@ import { useOrganization } from "../contexts/OrganizationContext";
 import { Can } from "../components/Can";
 import { sortProjects } from "../constants/projects";
 import { hoverIntent } from "../telemetry/hover";
+import { setPendingTrigger } from "../telemetry/trigger";
 import { usePageReady } from "../telemetry/usePageReady";
 import { track } from "../telemetry/tracker";
 
@@ -40,6 +41,7 @@ export function Projects () {
     });
 
     const handleRowClick = (projectId: string) => {
+        setPendingTrigger('project_row');
         navigate(`/projects/${projectId}`);
     };
 
@@ -95,7 +97,7 @@ export function Projects () {
                             <tr 
                                 key={project.id}
                                 onClick={() => handleRowClick(project.id)}
-                                {...hoverIntent(`/projects/${project.id}`, { entityType: 'project', entityId: project.id })} 
+                                {...hoverIntent(`/projects/${project.id}`, { entityType: 'project', entityId: project.id }, { trigger: 'project_row' })} 
                                 className="text-zinc-50 border-b border-white/5 last:border-0 hover:bg-zinc-800/50 transition-colors cursor-pointer"
                             >
                                 <td className="px-4 py-3">{project.name}</td>
