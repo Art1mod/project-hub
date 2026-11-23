@@ -13,7 +13,7 @@ import { TaskPanel } from "../components/tasks/TaskPanel";
 import { Pagination } from "../components/Pagination";
 import { useTrackEntityOpen } from "../telemetry/useTrackEntityOpen";
 import { track } from "../telemetry/tracker";
-import { setPendingTrigger } from "../telemetry/trigger";
+import { getLastNavTrigger, peekPendingTrigger, setPendingTrigger } from "../telemetry/trigger";
 import { usePageReady } from "../telemetry/usePageReady";
 
 const TASKS_PER_PAGE = 10; 
@@ -29,6 +29,8 @@ export function ProjectDetails() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const menuRef = useRef<HTMLDivElement>(null);
+    // The task whose entity_open was already tracked, so a table click is not counted twice
+    const lastTrackedTask = useRef<string | null>(null);
 
     const { activeOrgId } = useOrganization();
     const initialOrgId = useRef<string | null>(activeOrgId);
@@ -98,6 +100,25 @@ export function ProjectDetails() {
     const meta = tasksPage?.meta;
 
     const selectedTask = tasks.find((t) => t.id === searchParams.get("task")) ?? null;
+    const selectedTaskId = selectedTask?.id ?? null;
+
+    // A task that arrives through the URL (?task=, e.g. from a Needs attention row) is
+    // opened without selectTask: track it here. The trigger is still pending if the task
+    // was cached, otherwise it is the one the route change already took.
+    useEffect(() => {
+        if (!selectedTaskId) {
+            lastTrackedTask.current = null;
+            return;
+        }
+        if (lastTrackedTask.current === selectedTaskId) return;
+        lastTrackedTask.current = selectedTaskId;
+        track({
+            type: 'entity_open',
+            entityType: 'task',
+            entityId: selectedTaskId,
+            trigger: peekPendingTrigger() ?? getLastNavTrigger() ?? undefined,
+        });
+    }, [selectedTaskId]);
 
     // Update one URL param without wiping the others
     const updateParams = (change: (p: URLSearchParams) => void) =>
@@ -109,6 +130,7 @@ export function ProjectDetails() {
 
     const selectTask = (task: Task) => {
         if (task.id !== selectedTask?.id) {
+            lastTrackedTask.current = task.id;
             track({ type: 'entity_open', entityType: 'task', entityId: task.id, trigger: 'table_row' });
         }
         updateParams((p) => p.set("task", task.id));
