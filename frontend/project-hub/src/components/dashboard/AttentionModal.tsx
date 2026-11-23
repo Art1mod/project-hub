@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { getAttention } from "../../api/analytics";
 import { Modal } from "../Modal";
@@ -22,11 +22,26 @@ export function AttentionModal({ isOpen, onClose, orgId, projectId }: Props) {
     const openedAt = useRef<number | null>(null);
     const seenPages = useRef(new Set<number>());
 
+    // Records the close once per open. Clearing openedAt makes it safe to call twice.
+    const recordClose = useCallback(() => {
+        if (openedAt.current === null) return;
+        track({
+            type: 'action',
+            action: 'attention_modal_close',
+            dwellMs: Math.min(Date.now() - openedAt.current, MAX_DWELL_MS),
+            detail: { pagesViewed: seenPages.current.size },
+        });
+        openedAt.current = null;
+    }, []);
+
     useEffect(() => {
         if (!isOpen) return;
         openedAt.current = Date.now();
         seenPages.current = new Set([1]);
-    }, [isOpen]);
+        // Clicking a row navigates away and unmounts the modal while it is still open,
+        // so the close button is not the only way out. No-op if it already recorded it.
+        return recordClose;
+    }, [isOpen, recordClose]);
 
     const { data, isLoading, isError, isPlaceholderData } = useQuery({
         queryKey: ["analytics", "attention", orgId, projectId ?? "all", "modal", page],
@@ -44,12 +59,7 @@ export function AttentionModal({ isOpen, onClose, orgId, projectId }: Props) {
     };
 
     const close = () => {
-        track({
-            type: 'action',
-            action: 'attention_modal_close',
-            dwellMs: Math.min(Date.now() - (openedAt.current ?? Date.now()), MAX_DWELL_MS),
-            detail: { pagesViewed: seenPages.current.size },
-        });
+        recordClose();
         setPage(1);
         onClose();
     };
