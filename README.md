@@ -21,14 +21,14 @@ The question this project asks is whether a prefetcher driven by observed user b
 ## The approach
 
 1. **Client-side cache.** Server data lives in a TanStack Query cache keyed by tenant (for example `['projects', orgId]`). Revisiting a page can show cached data right away. Mutations invalidate the affected keys.
-2. **Behavior signals.** The frontend records what users actually do: hovering or focusing a link (150 ms delay, 2 s cooldown, so a mouse passing over a link does not count), route changes with time spent on each page, opening a project or task, paging through tables, and user actions. A hover on a link is the strongest hint of where the user goes next.
-3. **Measurement.** When a page finishes loading, the app records how long it took and what state the cache was in (`hit`, `stale` or `miss`). Each event carries an experiment `variant` (`control` or `prefetch`). The backend stores events with user, tenant and entity IDs hashed, so I can analyse behavior without storing raw IDs.
+2. **Behavior signals.** The frontend records what users actually do: hovering or focusing a link (150 ms delay, 2 s cooldown, so a mouse passing over a link does not count), route changes with time spent on each page, opening a project or task, paging through tables, and user actions. Each event also records what caused it (`trigger`: sidebar, dashboard card, Needs attention row, table row, pagination, browser back and so on) and a small per-action `detail`. A hover on a link is the strongest hint of where the user goes next.
+3. **Measurement.** When a page finishes loading, the app records how long it took and what state the cache was in (`hit`, `stale` or `miss`). Each event carries an experiment `variant` (`control` or `prefetch`). The backend stores events with user, tenant and entity IDs hashed, so I can analyse behavior without storing raw IDs. Every row is labeled with an `origin` (`real`, `pilot` or `synthetic`) and a `schemaVersion`, so test data never mixes with study data.
 
 **Not built yet:** the component that turns those signals into prefetch requests. The event types `prefetch_issued` and `prefetch_used` exist in the schema, but nothing emits them, and the client always reports `variant = 'control'`.
 
 ## Evaluation plan
 
-No measurements have been collected for the thesis yet. These are the metrics and what the repo already supports:
+Nothing has been analysed for the thesis yet. Two real trial sessions (318 events) are recorded and labeled `real`; all other rows are test data labeled `pilot`. These are the metrics and what the repo already supports:
 
 | Metric | Source | State in repo |
 |---|---|---|
@@ -39,11 +39,11 @@ No measurements have been collected for the thesis yet. These are the metrics an
 
 **Baseline:** the `control` variant, which is the current app: TanStack Query cache, no prefetching.
 
-**Method:** compare `control` and `prefetch` sessions on the metrics above using the `variant` field on each event. Analysis runs on the `NavEvent` table, which Metabase (in `docker-compose.yml`) can query. The client currently hard-codes the variant. A code comment says it should later be assigned per user by the server.
+**Method:** compare `control` and `prefetch` sessions on the metrics above using the `variant` field on each event. Analysis runs on the `NavEvent` table, which Metabase (in `docker-compose.yml`) can query. The client currently hard-codes the variant. A code comment says it should later be assigned per user by the server. Analysis filters on `origin = 'real'`, and adds `schemaVersion = 2` only for the newer fields (`trigger`, `position`, `detail`), which the two early trial sessions do not have. Every action, trigger and detail key is documented in [`docs/telemetry.md`](docs/telemetry.md).
 
 ![Metabase table of NavEvent rows for one session](docs/screenshots/metabase.png)
 
-_The raw telemetry in Metabase: one session recorded during development (144 events). Each row is one event: a link hover, route change, page ready (with `LatencyMs` and `CacheState`), entity open, page change or user action. User, tenant and entity IDs are hashed, and every row has `Variant = control`. This shows the data the evaluation will run on. It is not a result._
+_The raw telemetry in Metabase: one of the two real trial sessions (144 events). Each row is one event: a link hover, route change, page ready (with `LatencyMs` and `CacheState`), entity open, page change or user action. User, tenant and entity IDs are hashed, and every row has `Variant = control`. This shows the data the evaluation will run on. It is not a result._
 
 ## Preliminary findings
 
@@ -55,9 +55,10 @@ None yet. I will add measurements here once the study has run.
 - Multi-tenant app: organizations, roles, invitations, projects, tasks (filter, sort, paginate), attachments, dashboard analytics
 - Client cache with cache-state reporting on every main page
 - Behavior telemetry pipeline: client batching, rate-limited ingestion, hashed IDs, `NavEvent` storage, Metabase for exploration
+- Telemetry extension: what caused each event (`trigger`), a per-action `detail`, `origin` and `schemaVersion` labels, and tracking for Needs attention, sorting, organizations and the dashboard project selector
 
 **In progress**
-- A generator for AI-simulated telemetry logs, for building dashboards before enough real sessions exist (branch `feat/sim-telemetry`, not merged). Its output is synthetic and is not evidence for the thesis.
+- A generator for AI-simulated telemetry logs, for building dashboards before enough real sessions exist (branch `feat/sim-telemetry`, not merged). Its output is synthetic and is not evidence for the thesis. After the merge its rows must be labeled `origin = 'synthetic'` (see `docs/telemetry-sim-followup.md`).
 
 **Next**
 - Prefetch engine driven by hover and navigation signals
@@ -89,7 +90,7 @@ The same account in two organizations, with a different role in each:
 |---|---|
 | ![Settings page of an organization where the user is a member: no Invitations link and a read-only notice](docs/screenshots/access-member.png)<br>**Creative Spark Agency, as a member.** The sidebar has no Invitations link, and Settings says only owners and admins can change organization settings. | ![Settings page of an organization where the user can edit: Invitations link and an editable organization name](docs/screenshots/access-admin.png)<br>**NovaTech Software Solutions, as an owner or admin.** The Invitations link is there, and the organization name can be edited. |
 
-**Telemetry and tenants.** Each batch holds events for one organization, and the server checks membership before storing it. User, tenant and entity IDs are stored as truncated HMAC-SHA256 hashes. The server refuses to start without a `TELEMETRY_SALT` of at least 32 characters.
+**Telemetry and tenants.** Each batch holds events for one organization, and the server checks membership before storing it. User, tenant and entity IDs are stored as truncated HMAC-SHA256 hashes. The server refuses to start without a `TELEMETRY_SALT` of at least 32 characters. Only enums, bounded integers, route patterns and hashed IDs are stored, never free text: a per-action allowlist on the server keeps only known `detail` keys and rejects invalid values. The `origin` label is set by the server from its own configuration, never by the client.
 
 ## Product tour
 
@@ -107,6 +108,7 @@ The same account in two organizations, with a different role in each:
 | TanStack Query as the cache, not a custom one | I get its default semantics. The cache is in memory only and lost on reload. | Persist the cache if the study shows reloads matter |
 | Hover and focus as the "intent" signal | Hover is noisy and does not exist on touch devices. | Add more signals, such as visit history per role |
 | Hashed IDs in telemetry | I cannot join a log row back to a specific task or user. | Nothing. This is deliberate. |
+| An allowlist for event `detail` and a server-set `origin` | A new signal needs a code change on both client and server. Mislabeled test data has to be fixed with SQL. | Nothing for the allowlist. A small script for relabeling, instead of hand-written SQL |
 | Best-effort telemetry (dropped on failure, queue capped at 200) | Lost events slightly bias the metrics. | Measure the drop rate during the study |
 | Variant hard-coded to `control` for now | No randomized assignment yet | Server-side per-user assignment (planned) |
 
@@ -150,6 +152,7 @@ S3_SECRET_ACCESS_KEY=secret
 S3_FORCE_PATH_STYLE=true
 TELEMETRY_SALT="<at least 32 random characters, required>"
 TELEMETRY_ENABLED=true               # .env.example ships with false, which drops all events
+TELEMETRY_ORIGIN=pilot               # labels your own test data; the study server uses real
 ```
 
 Then create the bucket, apply the migrations and start the API:
@@ -177,6 +180,8 @@ The API allows CORS only from `http://localhost:5173`. The frontend talks to `ht
 cd backend/project-hub && npm test      # unit tests (npm run test:e2e for e2e)
 cd frontend/project-hub && npm run lint && npm run build
 ```
+
+Known limitation: most backend test suites currently fail to load, because Nest 12 is ESM-only and Jest is configured for CommonJS. The telemetry specs run (`npx jest src/telemetry`). The frontend has no test runner and is checked with the build and lint.
 
 ## Contact
 
