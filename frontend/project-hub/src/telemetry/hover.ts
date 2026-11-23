@@ -1,5 +1,6 @@
 import { getTelemetryRoute, track } from './tracker';
 import { toRoutePattern } from './routes';
+import type { TelemetryTrigger } from './types';
 
 const HOVER_DELAY_MS = 150;
 const COOLDOWN_MS = 2000;
@@ -13,7 +14,11 @@ interface Entity {
 }
 
 /** Spread onto a link or row: <NavLink {...hoverIntent('/projects')} /> */
-export function hoverIntent(to: string, entity?: Entity) {
+export function hoverIntent(
+    to: string,
+    entity?: Entity,
+    meta?: { trigger?: TelemetryTrigger; position?: number },
+) {
     const cancel = () => {
         const timer = timers.get(to);
         if (timer !== undefined) window.clearTimeout(timer);
@@ -29,7 +34,7 @@ export function hoverIntent(to: string, entity?: Entity) {
         if (now - (lastSent.get(to) ?? 0) < COOLDOWN_MS) return;
         lastSent.set(to, now);
 
-        track({ type: 'link_hover', fromRoute: fromRoute ?? undefined, toRoute, ...entity });
+        track({ type: 'link_hover', fromRoute: fromRoute ?? undefined, toRoute, ...entity, ...meta });
     };
 
     return {
