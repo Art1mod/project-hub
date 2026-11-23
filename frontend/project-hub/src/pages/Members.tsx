@@ -12,13 +12,13 @@ export function Members() {
     const queryClient = useQueryClient();
     const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);    
     
-    const { data: members, isLoading, isError } = useQuery({
+    const { data: members, isLoading, isError, error } = useQuery({
         queryKey: ['members', activeOrgId],
         queryFn: () => getMembers(activeOrgId!),
         enabled: !!activeOrgId
     }); 
 
-    usePageReady('/members', ['members', activeOrgId], !!members);
+    usePageReady('/members', ['members', activeOrgId], !!members, error);
 
     const removeMutation = useMutation({
         mutationFn: (member: Member) => removeMember(activeOrgId!, member.user.id),
