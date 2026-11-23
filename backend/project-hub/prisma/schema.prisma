@@ -130,6 +130,11 @@ model NavEvent {
   bytes      Int?
   cacheState String?
   action String?
+  trigger       String?
+  position      Int?
+  origin        String   @default("real")
+  schemaVersion Int      @default(2)
+  detail        Json?
 
   @@index([sessionId, clientTs])
   @@index([tenantHash, createdAt])
