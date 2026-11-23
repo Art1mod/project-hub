@@ -77,7 +77,7 @@ Events flow: hooks in `frontend/.../src/telemetry/` -> batched `POST /telemetry/
 - **Keep these in sync by hand:** the route list in `frontend/.../telemetry/routes.ts`, `backend/.../telemetry/route-normalizer.ts` and the routes in `App.tsx`. Event types and actions in `tracker.ts` must match `create-telemetry-batch.dto.ts`, and the vocabularies in `frontend/.../telemetry/types.ts` must match `telemetry-vocabulary.ts` and `detail-schema.ts`. A new tracked page, action or `detail` key that is missing from either side is silently dropped (the server logs a warning).
 - The server stores HMAC-SHA256 hashes (truncated to 32 hex characters) of user, tenant and entity IDs, using `TELEMETRY_SALT`. Raw IDs are never stored. It also rejects events older than 24 h or more than 5 min in the future. Ingestion is limited to 30 batches/min per user.
 - `prefetch_issued`/`prefetch_used` event types and `variant: 'prefetch'` exist, but nothing emits them. `VARIANT` is hard-coded to `'control'` in `telemetry/config.ts`.
-- Known bug: `TELEMETRY_ENABLED` in `telemetry/config.ts` is inverted (`VITE_TELEMETRY_ENABLED !== 'true'`), so setting it to `true` turns telemetry off.
+- Client telemetry is on by default; set `VITE_TELEMETRY_ENABLED=false` to turn it off (`telemetry/config.ts`). The backend has its own switch, `TELEMETRY_ENABLED`, which defaults to on in code but is `false` in `.env.example`.
 
 ### Simulator (unmerged)
 The simulated-telemetry generator lives on the branch `feat/sim-telemetry`, with its design doc under `docs/superpowers/` on that branch. Do not commit `backend/project-hub/sim/runs/` or `sim/ground-truth/`. `ground-truth` is raw data from real sessions, and `runs` is generated output.
