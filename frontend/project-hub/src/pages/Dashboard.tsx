@@ -8,6 +8,7 @@ import { STATUS_OPTIONS } from "../constants/tasks";
 import { STATUS_COLORS, WorkloadDonut } from "../components/dashboard/WorkloadDonut";
 import { hoverIntent } from "../telemetry/hover";
 import { setPendingTrigger } from "../telemetry/trigger";
+import { track } from "../telemetry/tracker";
 import { usePageReady } from "../telemetry/usePageReady";
 import { TASKS_PER_PAGE, type Status } from "../api/tasks";
 import { AttentionList } from "../components/dashboard/AttentionList";
@@ -213,7 +214,10 @@ export function Dashboard() {
                             tasks={attention.tasks}
                             total={attention.total}
                             showProject={!projectId}
-                            onShowAll={() => setIsAttentionOpen(true)}
+                            onShowAll={() => {
+                                track({ type: 'action', action: 'attention_modal_open' });
+                                setIsAttentionOpen(true);
+                            }}
                         />
                     )}
 
