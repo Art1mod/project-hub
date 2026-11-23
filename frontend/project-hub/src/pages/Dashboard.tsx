@@ -9,10 +9,11 @@ import { STATUS_COLORS, WorkloadDonut } from "../components/dashboard/WorkloadDo
 import { hoverIntent } from "../telemetry/hover";
 import { setPendingTrigger } from "../telemetry/trigger";
 import { track } from "../telemetry/tracker";
+import { sizeBucket } from "../telemetry/classify";
 import { usePageReady } from "../telemetry/usePageReady";
 import { TASKS_PER_PAGE, type Status } from "../api/tasks";
 import { AttentionList } from "../components/dashboard/AttentionList";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AttentionModal } from "../components/dashboard/AttentionModal";
 
 export function Dashboard() {
@@ -20,6 +21,9 @@ export function Dashboard() {
     const navigate = useNavigate();
     const [searchParams, setSearchParams] = useSearchParams();
     const [isAttentionOpen, setIsAttentionOpen] = useState(false);
+    // Set when the user changes the selector ("" means all projects). Page load and the
+    // saved selection never set it, so they are never tracked.
+    const pendingFilter = useRef<string | null>(null);
 
     const { data: projects = [], isSuccess: projectsLoaded } = useQuery({
         queryKey: ["projects", activeOrgId],
@@ -45,6 +49,7 @@ export function Dashboard() {
     const projectId = selectedProject?.id;
 
     const selectProject = (id: string) => {
+        pendingFilter.current = id;
         try {
             if (storageKey) {
                 if (id) localStorage.setItem(storageKey, id);
@@ -75,6 +80,19 @@ export function Dashboard() {
 
     const total = metrics ? metrics.TODO + metrics.IN_PROGRESS + metrics.DONE : 0;
     const open = metrics ? metrics.TODO + metrics.IN_PROGRESS : 0;
+
+    // Sent once the new project's workload has loaded, so its size bucket is known
+    useEffect(() => {
+        if (pendingFilter.current === null || !metrics) return;
+        pendingFilter.current = null;
+        track({
+            type: 'action',
+            action: 'project_filter_change',
+            entityType: projectId ? 'project' : undefined,
+            entityId: projectId,
+            detail: { projectSize: projectId ? sizeBucket(total) : 'all' },
+        });
+    }, [metrics, projectId, total]);
 
     const destination = projectId ? `/projects/${projectId}` : "/projects";
     const destinationLabel = projectId ? "View tasks" : "View all projects";
