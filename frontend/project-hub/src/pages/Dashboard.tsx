@@ -7,6 +7,7 @@ import { sortProjects } from "../constants/projects";
 import { STATUS_OPTIONS } from "../constants/tasks";
 import { STATUS_COLORS, WorkloadDonut } from "../components/dashboard/WorkloadDonut";
 import { hoverIntent } from "../telemetry/hover";
+import { setPendingTrigger } from "../telemetry/trigger";
 import { usePageReady } from "../telemetry/usePageReady";
 import { TASKS_PER_PAGE, type Status } from "../api/tasks";
 import { AttentionList } from "../components/dashboard/AttentionList";
@@ -76,10 +77,14 @@ export function Dashboard() {
 
     const destination = projectId ? `/projects/${projectId}` : "/projects";
     const destinationLabel = projectId ? "View tasks" : "View all projects";
-    const goToDestination = () => navigate(destination);
+    const goToDestination = () => {
+        setPendingTrigger('dashboard_card');
+        navigate(destination);
+    };
     const hover = hoverIntent(
         destination,
         projectId ? { entityType: 'project', entityId: projectId } : undefined,
+        { trigger: 'dashboard_card' },
     );
 
     const statusDestination = (status: Status) => {
@@ -157,8 +162,11 @@ export function Dashboard() {
                                     <button
                                         key={option.value}
                                         type="button"
-                                        onClick={() => navigate(to)}
-                                        {...hoverIntent(to, projectId ? { entityType: 'project', entityId: projectId, page } : undefined)}
+                                        onClick={() => {
+                                            setPendingTrigger('dashboard_card');
+                                            navigate(to);
+                                        }}
+                                        {...hoverIntent(to, projectId ? { entityType: 'project', entityId: projectId, page } : undefined, { trigger: 'dashboard_card' })}
                                         className="rounded-xl border border-white/10 bg-zinc-900 p-5 text-left transition-colors hover:border-violet-500/50"
                                     >
                                         <div className="flex items-center gap-2">
