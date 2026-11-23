@@ -57,7 +57,7 @@ export function Dashboard() {
     // Wait for the project list, so a saved project is resolved before any data is fetched
     const ready = !!activeOrgId && projectsLoaded;
 
-    const { data: metrics, isLoading, isError } = useQuery({
+    const { data: metrics, isLoading, isError, error: metricsError } = useQuery({
         queryKey: ["analytics", "workload", activeOrgId, projectId ?? "all"],
         queryFn: () => getWorkload(activeOrgId!, projectId),
         enabled: ready,
@@ -69,7 +69,7 @@ export function Dashboard() {
         enabled: ready,
     });
 
-    usePageReady('/dashboard', ['analytics', 'workload', activeOrgId, projectId ?? 'all'], !!metrics && !!attention);
+    usePageReady('/dashboard', ['analytics', 'workload', activeOrgId, projectId ?? 'all'], !!metrics && !!attention, metricsError);
 
     const total = metrics ? metrics.TODO + metrics.IN_PROGRESS + metrics.DONE : 0;
     const open = metrics ? metrics.TODO + metrics.IN_PROGRESS : 0;
