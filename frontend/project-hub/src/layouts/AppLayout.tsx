@@ -7,9 +7,16 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { Can } from '../components/Can';
 import { hoverIntent } from '../telemetry/hover';
+import { setPendingTrigger } from '../telemetry/trigger';
 import { endTelemetrySession } from '../telemetry/tracker';
 import { useNavigationTracking } from '../telemetry/useNavigationTracking';
 import { useCurrentUser } from '../hooks/useCurrentUser';
+
+// Props for a sidebar link: records the trigger on click and on hover
+const sidebar = (to: string) => ({
+    onClick: () => setPendingTrigger('sidebar'),
+    ...hoverIntent(to, undefined, { trigger: 'sidebar' }),
+});
 
 export function AppLayout() {
     const token = localStorage.getItem('token');
@@ -129,13 +136,13 @@ export function AppLayout() {
                     <span className="mb-1 block px-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
                         {activeOrg?.name ?? 'Navigation'}
                     </span>
-                    <NavLink to="/dashboard" className={navLinkClass} {...hoverIntent('/dashboard')}>Dashboard</NavLink>
-                    <NavLink to="/projects" className={navLinkClass} {...hoverIntent('/projects')}>Projects</NavLink>
-                    <NavLink to="/members" className={navLinkClass} {...hoverIntent('/members')}>Members</NavLink>
+                    <NavLink to="/dashboard" className={navLinkClass} {...sidebar('/dashboard')}>Dashboard</NavLink>
+                    <NavLink to="/projects" className={navLinkClass} {...sidebar('/projects')}>Projects</NavLink>
+                    <NavLink to="/members" className={navLinkClass} {...sidebar('/members')}>Members</NavLink>
                     <Can permission="invitation:view">
-                        <NavLink to="/invitations" className={navLinkClass} {...hoverIntent('/invitations')}>Invitations</NavLink>
+                        <NavLink to="/invitations" className={navLinkClass} {...sidebar('/invitations')}>Invitations</NavLink>
                     </Can>
-                    <NavLink to="/settings" className={navLinkClass} {...hoverIntent('/settings')}>Settings</NavLink>
+                    <NavLink to="/settings" className={navLinkClass} {...sidebar('/settings')}>Settings</NavLink>
                 </nav>
 
                 {/* Account */}
@@ -149,7 +156,7 @@ export function AppLayout() {
                         </div>
                         <span className="min-w-0 flex-1 truncate text-xs text-zinc-400">{userEmail}</span>
                     </div>
-                    <NavLink to="/profile" className={navLinkClass} {...hoverIntent('/profile')}>Profile</NavLink>
+                    <NavLink to="/profile" className={navLinkClass} {...sidebar('/profile')}>Profile</NavLink>
                     <button
                         type="button"
                         onClick={() => setIsLogoutModalOpen(true)}
