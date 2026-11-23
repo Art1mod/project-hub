@@ -13,6 +13,7 @@ import { TaskPanel } from "../components/tasks/TaskPanel";
 import { Pagination } from "../components/Pagination";
 import { useTrackEntityOpen } from "../telemetry/useTrackEntityOpen";
 import { track } from "../telemetry/tracker";
+import { setPendingTrigger } from "../telemetry/trigger";
 import { usePageReady } from "../telemetry/usePageReady";
 
 const TASKS_PER_PAGE = 10; 
@@ -41,6 +42,7 @@ export function ProjectDetails() {
         if (!initialOrgId.current && activeOrgId) {
             initialOrgId.current = activeOrgId;
         } else if (initialOrgId.current && activeOrgId && initialOrgId.current !== activeOrgId) {
+            setPendingTrigger('redirect');
             navigate('/projects');
         }
     }, [activeOrgId, navigate]);
@@ -107,7 +109,7 @@ export function ProjectDetails() {
 
     const selectTask = (task: Task) => {
         if (task.id !== selectedTask?.id) {
-            track({ type: 'entity_open', entityType: 'task', entityId: task.id });
+            track({ type: 'entity_open', entityType: 'task', entityId: task.id, trigger: 'table_row' });
         }
         updateParams((p) => p.set("task", task.id));
     };
@@ -115,7 +117,7 @@ export function ProjectDetails() {
     const closePanel = () => updateParams((p) => p.delete("task"));
     
     const goToPage = (n: number) => {
-        track({ type: 'page_change', page: n, entityType: 'project', entityId: projectId });
+        track({ type: 'page_change', page: n, entityType: 'project', entityId: projectId, trigger: 'pagination' });
             updateParams((p) => {
                 p.set("page", String(n)); 
                 p.delete("task"); // the selected task isn't on the new page
