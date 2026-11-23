@@ -80,7 +80,11 @@ export function ProjectDetails() {
     });
 
     // Click cycle: off -> asc -> desc -> off
-    const toggleSort = (column: SortBy) =>
+    const toggleSort = (column: SortBy) => {
+        // Tracked from the click only, never from URL state on load
+        const next = sortBy !== column ? "asc" : order === "asc" ? "desc" : "default";
+        track({ type: 'action', action: 'sort_change', detail: { sortBy: column, order: next } });
+
         updateParams((p) => {
             if (sortBy !== column) {
                 p.set("sort", column);
@@ -94,6 +98,7 @@ export function ProjectDetails() {
             p.delete("page"); // a new ordering starts from page 1
             p.delete("task");
         });
+    };
 
     usePageReady('/projects/:id', ['project', projectId], !!project && !!tasksPage, projectError ?? tasksError);
     const tasks = tasksPage?.data ?? [];
