@@ -15,6 +15,7 @@ import { useTrackEntityOpen } from "../telemetry/useTrackEntityOpen";
 import { track } from "../telemetry/tracker";
 import { getLastNavTrigger, peekPendingTrigger, setPendingTrigger } from "../telemetry/trigger";
 import { usePageReady } from "../telemetry/usePageReady";
+import { taskFieldOf } from "../telemetry/classify";
 
 const TASKS_PER_PAGE = 10; 
 
@@ -162,8 +163,15 @@ export function ProjectDetails() {
     const updateTaskMutation = useMutation({
         mutationFn: ({ taskId, data }: { taskId: string, data: Partial<CreateTaskProps> }) =>
             updateTask({ taskId, data }),
-        onSuccess: (updated) => {
-            track({ type: 'action', action: 'task_update', entityType: 'task', entityId: updated.id });
+        onSuccess: (updated, { data }) => {
+            const field = taskFieldOf(data); // the field name only, never its value
+            track({
+                type: 'action',
+                action: 'task_update',
+                entityType: 'task',
+                entityId: updated.id,
+                detail: field ? { field } : undefined,
+            });
             queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
             queryClient.invalidateQueries({ queryKey: ["analytics"] });
         }
