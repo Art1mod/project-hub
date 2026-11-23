@@ -55,7 +55,7 @@ export function ProjectDetails() {
         return () => document.removeEventListener("mousedown", onMouseDown);
     }, [isMenuOpen]);
 
-    const { data: project, isLoading: isProjectLoading, isError: isProjectError } = useQuery({
+    const { data: project, isLoading: isProjectLoading, isError: isProjectError, error: projectError } = useQuery({
         queryKey: ['project', projectId],
         queryFn: () => getProject(projectId!),
         enabled: !!projectId && !isDeleted,
@@ -68,7 +68,7 @@ export function ProjectDetails() {
     const sortBy = rawSort === "status" || rawSort === "priority" ? rawSort : undefined;
     const order = searchParams.get("order") === "desc" ? "desc" : "asc";
 
-    const { data: tasksPage, isLoading, isError, isPlaceholderData } = useQuery({
+    const { data: tasksPage, isLoading, isError, isPlaceholderData, error: tasksError } = useQuery({
         queryKey: ['tasks', projectId, page, sortBy ?? 'default', order],
         queryFn: () => getTasks(projectId!, page, TASKS_PER_PAGE, sortBy ? { sortBy, order } : undefined),
         enabled: !!projectId && !isDeleted,
@@ -91,7 +91,7 @@ export function ProjectDetails() {
             p.delete("task");
         });
 
-    usePageReady('/projects/:id', ['project', projectId], !!project && !!tasksPage);
+    usePageReady('/projects/:id', ['project', projectId], !!project && !!tasksPage, projectError ?? tasksError);
     const tasks = tasksPage?.data ?? [];
     const meta = tasksPage?.meta;
 
