@@ -22,6 +22,8 @@ backend/.env
 # Exclude local Docker Postgres persistent data volumes if stored locally
 postgres_data/
 docker-data/
+# Database dumps contain real data: keep them out of the repo
+taskforge-backup*.sql
 
 # --- Logs ---
 npm-debug.log*
