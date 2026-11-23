@@ -31,7 +31,7 @@ These do not conflict as text but must be checked by hand:
    - `detail.hiddenMs` on `route_change`, `detail.result` on `page_ready`, and the environment on `session_start`;
    - the new actions (`sort_change`, `project_filter_change`, `attention_modal_*`, `org_*`).
 4. **Keep the cache model honest.** `sim/engine/cache-model.ts` replays the real `cacheState` values. Org switching now emits `org_switch`, and the new Needs attention row click opens a task through the URL; check that neither changes the cache replay (36/36 on the recorded sessions).
-5. **Real-session comparison.** `sim/validate/compare.ts` reads `ground-truth/real-sessions.json`, which predates the new columns. Treat those rows as `pilot`/1 and compare only the fields both versions have.
+5. **Real-session comparison.** `sim/validate/compare.ts` reads `ground-truth/real-sessions.json`, which predates the new columns. Those two sessions are `real`/1 in the main database: compare only the fields both versions have.
 6. Update the report (`sim/validate/report.ts`) to group by `origin` so it can never mix synthetic rows with real ones.
 
 ## Order of work

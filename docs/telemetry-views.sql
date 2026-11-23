@@ -2,7 +2,8 @@
 --
 -- Not part of any migration: apply it by hand to the database Metabase reads,
 -- and re-run it after the vocabulary in docs/telemetry.md changes.
--- It keeps every row. Filter on origin = 'real' AND schema_version = 2 for analysis.
+-- It keeps every row. Filter on origin = 'real' for analysis, and add
+-- schema_version = 2 only when using the new fields (trigger, position, detail).
 
 CREATE OR REPLACE VIEW nav_event_readable AS
 SELECT

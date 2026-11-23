@@ -16,13 +16,13 @@ Only enums, bounded integers, route patterns and hashed IDs are stored. Never fr
 | Column | Meaning |
 |---|---|
 | `origin` | `real`, `pilot` or `synthetic`. Set by the server from `TELEMETRY_ORIGIN` (default `real`), never by the client. |
-| `schemaVersion` | `2` for rows written after the extension. The migration marked earlier rows `pilot` / `1`. |
+| `schemaVersion` | `2` for rows written after the extension. The migration marked earlier rows `pilot` / `1`; the two real trial sessions of 4 November 2026 (318 events) were then relabeled `real` / `1` by hand. Version 1 rows have no `trigger`, `position` or `detail`. |
 | `variant` | `control` or `prefetch`. The client currently always sends `control`. |
 | `trigger` | What caused the navigation or action (table below). NULL when unknown. |
 | `position` | 1-based place of a row in the visible list or modal page (1 to 100). Only set on Needs attention rows. |
 | `detail` | Small JSON object, keys per action (table below). Unknown keys are dropped and an invalid value rejects the event. |
 
-**Analysis rule:** filter on `origin = 'real' AND "schemaVersion" = 2`.
+**Analysis rule:** filter on `origin = 'real'`. That covers the real trials of both versions, and the core metrics (navigation time, cache hit rate, latency) exist in both. Add `AND "schemaVersion" = 2` only for anything that uses the new fields (`trigger`, `position`, `detail`, hidden time), because version 1 rows do not have them.
 
 ## Event types
 
